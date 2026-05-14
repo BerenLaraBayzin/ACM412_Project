@@ -1,0 +1,52 @@
+{% extends 'base.html' %}
+
+{% block content %}
+<div class="row">
+    <div class="col-md-5 mb-3">
+        {% if book.image %}
+            <img src="{{ book.image.url }}" class="img-fluid rounded shadow" alt="{{ book.title }}">
+        {% else %}
+            <div class="bg-light border rounded p-5 text-center text-muted">Görsel yok</div>
+        {% endif %}
+    </div>
+    <div class="col-md-7">
+        <h1 class="h2">{{ book.title }}</h1>
+        <p class="text-muted mb-1">{{ book.author }}</p>
+        {% if book.category %}
+            <p class="small"><span class="badge bg-secondary">{{ book.category.name }}</span></p>
+        {% endif %}
+        <p class="display-6 fw-semibold">{{ book.price }} TL</p>
+        <p><strong>Durum:</strong> {{ book.get_condition_display }}</p>
+        <p><strong>Satıcı:</strong> {{ book.seller.username }}</p>
+        {% if book.is_sold %}
+            <p class="text-danger fw-bold">Bu ilan satıldı.</p>
+            {% if sale %}
+                <p class="small text-muted">Alıcı: {{ sale.buyer.username }}</p>
+            {% endif %}
+        {% endif %}
+        <hr>
+        <h2 class="h5">Açıklama</h2>
+        <p class="text-break">{{ book.description|linebreaks }}</p>
+
+        {% if user.is_authenticated %}
+            {% if can_buy %}
+                <a href="{% url 'order_create' book.pk %}" class="btn btn-success me-2">Satın al</a>
+            {% endif %}
+            {% if can_message %}
+                {% if message_thread_exists %}
+                    <a href="{% url 'message_thread' book.pk book.seller_id %}" class="btn btn-outline-secondary">Mesajlarım (satıcı)</a>
+                {% else %}
+                    <a href="{% url 'message_compose' book.pk %}" class="btn btn-outline-secondary">Satıcıya yaz</a>
+                {% endif %}
+            {% endif %}
+        {% endif %}
+
+        {% if user.is_authenticated and user.id == book.seller_id and not book.is_sold %}
+            <div class="d-flex flex-wrap gap-2 mt-3">
+                <a href="{% url 'book_update' book.pk %}" class="btn btn-outline-primary">Düzenle</a>
+                <a href="{% url 'book_delete' book.pk %}" class="btn btn-outline-danger">Sil</a>
+            </div>
+        {% endif %}
+    </div>
+</div>
+{% endblock %}

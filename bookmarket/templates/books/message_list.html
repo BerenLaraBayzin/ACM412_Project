@@ -1,0 +1,21 @@
+{% extends 'base.html' %}
+
+{% block content %}
+<h2>Mesajlarım</h2>
+{% if threads %}
+    <div class="list-group mt-3">
+        {% for t in threads %}
+            <a href="{% url 'message_thread' t.book.pk t.other.pk %}" class="list-group-item list-group-item-action">
+                <div class="d-flex w-100 justify-content-between">
+                    <strong>{{ t.book.title }}</strong>
+                    <small class="text-muted">{{ t.last.sent_at|date:"d.m.Y H:i" }}</small>
+                </div>
+                <small class="text-muted">{{ t.other.username }}</small>
+                <p class="mb-0 mt-1 text-truncate">{{ t.last.body }}</p>
+            </a>
+        {% endfor %}
+    </div>
+{% else %}
+    <p class="mt-3">Henüz mesajınız yok. Bir ilanın detayından satıcıya yazabilirsiniz.</p>
+{% endif %}
+{% endblock %}

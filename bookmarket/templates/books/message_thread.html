@@ -1,0 +1,37 @@
+{% extends 'base.html' %}
+
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-3">
+    <div>
+        <h2 class="h4 mb-0">{{ book.title }}</h2>
+        <small class="text-muted">{{ with_user.username }} ile konuşma</small>
+    </div>
+    <a href="{% url 'message_list' %}" class="btn btn-outline-secondary btn-sm">Tüm mesajlar</a>
+</div>
+
+<div class="border rounded p-3 mb-3 bg-light" style="max-height: 420px; overflow-y: auto;">
+    {% for m in thread_messages %}
+        <div class="mb-3 {% if m.sender_id == user.id %}text-end{% endif %}">
+            <div class="d-inline-block text-start p-2 rounded {% if m.sender_id == user.id %}bg-primary text-white{% else %}bg-white border{% endif %}" style="max-width: 85%;">
+                <small class="opacity-75">{{ m.sender.username }} · {{ m.sent_at|date:"d.m.Y H:i" }}</small>
+                <div class="mt-1">{{ m.body|linebreaksbr }}</div>
+            </div>
+        </div>
+    {% empty %}
+        <p class="text-muted mb-0">Henüz mesaj yok.</p>
+    {% endfor %}
+</div>
+
+<form method="post" style="max-width: 560px;">
+    {% csrf_token %}
+    {% for field in form %}
+        <div class="mb-2">
+            {{ field }}
+            {% for error in field.errors %}
+                <div class="text-danger small">{{ error }}</div>
+            {% endfor %}
+        </div>
+    {% endfor %}
+    <button type="submit" class="btn btn-primary">Yanıtla</button>
+</form>
+{% endblock %}

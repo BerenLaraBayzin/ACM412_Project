@@ -1,7 +1,44 @@
 {% extends 'base.html' %}
 
 {% block content %}
-<h2>Satıştaki Kitaplar</h2>
+<h2 class="mb-3">Satıştaki Kitaplar</h2>
+
+<form method="get" class="row g-2 align-items-end mb-4 p-3 bg-light rounded border">
+    <div class="col-md-3">
+        <label class="form-label small mb-0" for="id_q">Arama</label>
+        <input type="search" name="q" id="id_q" class="form-control" placeholder="Başlık veya yazar" value="{{ filter_q }}">
+    </div>
+    <div class="col-md-2">
+        <label class="form-label small mb-0" for="id_category">Kategori</label>
+        <select name="category" id="id_category" class="form-select">
+            <option value="">Tümü</option>
+            {% for c in categories %}
+                <option value="{{ c.pk }}" {% if filter_category == c.pk|stringformat:"s" %}selected{% endif %}>{{ c.name }}</option>
+            {% endfor %}
+        </select>
+    </div>
+    <div class="col-md-2">
+        <label class="form-label small mb-0" for="id_condition">Durum</label>
+        <select name="condition" id="id_condition" class="form-select">
+            <option value="">Tümü</option>
+            <option value="new" {% if filter_condition == "new" %}selected{% endif %}>Yeni gibi</option>
+            <option value="good" {% if filter_condition == "good" %}selected{% endif %}>İyi</option>
+            <option value="used" {% if filter_condition == "used" %}selected{% endif %}>Yıpranmış</option>
+        </select>
+    </div>
+    <div class="col-md-2">
+        <label class="form-label small mb-0" for="id_min">Min TL</label>
+        <input type="number" step="0.01" name="min_price" id="id_min" class="form-control" value="{{ filter_min_price }}">
+    </div>
+    <div class="col-md-2">
+        <label class="form-label small mb-0" for="id_max">Max TL</label>
+        <input type="number" step="0.01" name="max_price" id="id_max" class="form-control" value="{{ filter_max_price }}">
+    </div>
+    <div class="col-md-1">
+        <button type="submit" class="btn btn-primary w-100">Filtrele</button>
+    </div>
+</form>
+
 <div class="row">
     {% for book in books %}
     <div class="col-md-4 mb-4">
@@ -12,13 +49,36 @@
             <div class="card-body">
                 <h5 class="card-title">{{ book.title }}</h5>
                 <p class="card-text text-muted">{{ book.author }}</p>
+                {% if book.category %}
+                    <p class="small mb-1"><span class="badge bg-secondary">{{ book.category.name }}</span></p>
+                {% endif %}
                 <p class="card-text"><strong>{{ book.price }} TL</strong></p>
                 <a href="{% url 'book_detail' book.pk %}" class="btn btn-primary">Detaylara Bak</a>
             </div>
         </div>
     </div>
     {% empty %}
-        <p>Henüz kitap eklenmemiş. İlk kitabı sen ekle!</p>
+        <p>Aradığınız kriterlere uygun ilan yok.</p>
     {% endfor %}
 </div>
+
+{% if page_obj.has_other_pages %}
+<nav aria-label="Sayfalama" class="mt-4">
+    <ul class="pagination flex-wrap justify-content-center">
+        {% if page_obj.has_previous %}
+            <li class="page-item">
+                <a class="page-link" href="?page={{ page_obj.previous_page_number }}{{ querystring }}">Önceki</a>
+            </li>
+        {% endif %}
+        <li class="page-item disabled">
+            <span class="page-link">{{ page_obj.number }} / {{ page_obj.paginator.num_pages }}</span>
+        </li>
+        {% if page_obj.has_next %}
+            <li class="page-item">
+                <a class="page-link" href="?page={{ page_obj.next_page_number }}{{ querystring }}">Sonraki</a>
+            </li>
+        {% endif %}
+    </ul>
+</nav>
+{% endif %}
 {% endblock %}

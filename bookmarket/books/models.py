@@ -42,8 +42,12 @@ class Message(models.Model):
         return f"From {self.sender} to {self.receiver} about {self.book.title}"
 
 class Order(models.Model):
-    buyer = models.ForeignKey(User, on_delete=models.CASCADE)
-    book = models.OneToOneField(Book, on_delete=models.CASCADE)
+    buyer = models.ForeignKey(
+        User, on_delete=models.CASCADE, related_name='purchases'
+    )
+    book = models.OneToOneField(
+        Book, on_delete=models.CASCADE, related_name='sale_order'
+    )
     address = models.TextField()
     ordered_at = models.DateTimeField(auto_now_add=True)
 

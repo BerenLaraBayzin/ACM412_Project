@@ -1,0 +1,11 @@
+{% extends 'base.html' %}
+
+{% block content %}
+<h2>İlanı sil</h2>
+<p><strong>{{ book.title }}</strong> ilanını kalıcı olarak silmek istediğinize emin misiniz?</p>
+<form method="post" class="d-flex gap-2">
+    {% csrf_token %}
+    <button type="submit" class="btn btn-danger">Evet, sil</button>
+    <a href="{% url 'book_detail' book.pk %}" class="btn btn-outline-secondary">Vazgeç</a>
+</form>
+{% endblock %}
