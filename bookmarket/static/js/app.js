@@ -28,6 +28,32 @@
     localStorage.setItem(STORAGE_KEY, next);
   });
 
+  // Mobile nav toggle
+  document.addEventListener('click', function (e) {
+    const t = e.target.closest('[data-toggle-nav]');
+    if (!t) return;
+    const links = document.querySelector('.nav-links');
+    if (links) links.classList.toggle('mobile-open');
+  });
+
+  // Alert close
+  document.addEventListener('click', function (e) {
+    const btn = e.target.closest('[data-close-alert]');
+    if (!btn) return;
+    const alert = btn.closest('.alert');
+    if (!alert) return;
+    alert.classList.add('is-hiding');
+    setTimeout(() => alert.remove(), 250);
+  });
+
+  // Auto-dismiss success alerts after 4s
+  document.querySelectorAll('.alert-success').forEach(function (a) {
+    setTimeout(() => {
+      a.classList.add('is-hiding');
+      setTimeout(() => a.remove(), 250);
+    }, 4500);
+  });
+
   function getCookie(name) {
     const m = document.cookie.match(new RegExp('(?:^|; )' + name + '=([^;]*)'));
     return m ? decodeURIComponent(m[1]) : '';
