@@ -1,52 +1,78 @@
 {% extends 'base.html' %}
 
+{% block title %}{{ book.title }} — BookMarket{% endblock %}
+
 {% block content %}
-<div class="row">
-    <div class="col-md-5 mb-3">
-        {% if book.image %}
-            <img src="{{ book.image.url }}" class="img-fluid rounded shadow" alt="{{ book.title }}">
-        {% else %}
-            <div class="bg-light border rounded p-5 text-center text-muted">Görsel yok</div>
-        {% endif %}
+<div class="row g-4">
+    <div class="col-md-5">
+        <div class="card-img-wrap rounded shadow-sm">
+            {% if book.image %}
+                <img src="{{ book.image.url }}" class="img-fluid rounded" alt="{{ book.title }}" style="width: 100%; object-fit: cover;">
+            {% else %}
+                <div class="p-5 text-center text-muted" style="background: var(--bm-surface-alt);">Görsel yok</div>
+            {% endif %}
+        </div>
     </div>
     <div class="col-md-7">
-        <h1 class="h2">{{ book.title }}</h1>
-        <p class="text-muted mb-1">{{ book.author }}</p>
-        {% if book.category %}
-            <p class="small"><span class="badge bg-secondary">{{ book.category.name }}</span></p>
-        {% endif %}
-        <p class="display-6 fw-semibold">{{ book.price }} TL</p>
-        <p><strong>Durum:</strong> {{ book.get_condition_display }}</p>
-        <p><strong>Satıcı:</strong> {{ book.seller.username }}</p>
-        {% if book.is_sold %}
-            <p class="text-danger fw-bold">Bu ilan satıldı.</p>
-            {% if sale %}
-                <p class="small text-muted">Alıcı: {{ sale.buyer.username }}</p>
+        <div class="d-flex justify-content-between align-items-start gap-2 flex-wrap">
+            <div>
+                <h1 class="h2 mb-1">{{ book.title }}</h1>
+                <p class="text-muted mb-2">{{ book.author }}</p>
+                {% if book.category %}
+                    <span class="badge bg-secondary">{{ book.category.name }}</span>
+                {% endif %}
+            </div>
+            {% if user.is_authenticated %}
+            <button type="button"
+                    class="btn-favorite {% if is_favorited %}is-favorited{% endif %}"
+                    data-toggle-url="{% url 'favorite_toggle' book.pk %}"
+                    data-login-url="{% url 'login' %}">
+                <span class="heart">{% if is_favorited %}♥{% else %}♡{% endif %}</span>
+                <span class="count">{{ favorite_count }}</span>
+            </button>
+            {% else %}
+            <span class="btn-favorite" title="Favoriler için giriş yapın">
+                <span class="heart">♡</span><span class="count">{{ favorite_count }}</span>
+            </span>
             {% endif %}
+        </div>
+
+        <p class="display-6 fw-bold mt-3" style="color: var(--bm-primary);">{{ book.price }} TL</p>
+        <p class="mb-1"><strong>Durum:</strong> {{ book.get_condition_display }}</p>
+        <p class="mb-1"><strong>Satıcı:</strong> {{ book.seller.username }}</p>
+
+        {% if book.is_sold %}
+            <div class="alert alert-warning mt-3">
+                Bu ilan satıldı.
+                {% if sale %}<br><small class="text-muted">Alıcı: {{ sale.buyer.username }}</small>{% endif %}
+            </div>
         {% endif %}
+
         <hr>
         <h2 class="h5">Açıklama</h2>
         <p class="text-break">{{ book.description|linebreaks }}</p>
 
-        {% if user.is_authenticated %}
-            {% if can_buy %}
-                <a href="{% url 'order_create' book.pk %}" class="btn btn-success me-2">Satın al</a>
-            {% endif %}
-            {% if can_message %}
-                {% if message_thread_exists %}
-                    <a href="{% url 'message_thread' book.pk book.seller_id %}" class="btn btn-outline-secondary">Mesajlarım (satıcı)</a>
-                {% else %}
-                    <a href="{% url 'message_compose' book.pk %}" class="btn btn-outline-secondary">Satıcıya yaz</a>
+        <div class="d-flex flex-wrap gap-2 mt-4">
+            {% if user.is_authenticated %}
+                {% if can_buy %}
+                    <a href="{% url 'order_create' book.pk %}" class="btn btn-success">Satın al</a>
                 {% endif %}
+                {% if can_message %}
+                    {% if message_thread_exists %}
+                        <a href="{% url 'message_thread' book.pk book.seller_id %}" class="btn btn-outline-primary">Mesajlarım (satıcı)</a>
+                    {% else %}
+                        <a href="{% url 'message_compose' book.pk %}" class="btn btn-outline-primary">Satıcıya yaz</a>
+                    {% endif %}
+                {% endif %}
+                {% if user.id == book.seller_id and not book.is_sold %}
+                    <a href="{% url 'book_update' book.pk %}" class="btn btn-outline-secondary">Düzenle</a>
+                    <a href="{% url 'book_delete' book.pk %}" class="btn btn-outline-danger">Sil</a>
+                {% endif %}
+            {% else %}
+                <a href="{% url 'login' %}" class="btn btn-primary">Giriş yap</a>
+                <a href="{% url 'register' %}" class="btn btn-outline-primary">Kayıt ol</a>
             {% endif %}
-        {% endif %}
-
-        {% if user.is_authenticated and user.id == book.seller_id and not book.is_sold %}
-            <div class="d-flex flex-wrap gap-2 mt-3">
-                <a href="{% url 'book_update' book.pk %}" class="btn btn-outline-primary">Düzenle</a>
-                <a href="{% url 'book_delete' book.pk %}" class="btn btn-outline-danger">Sil</a>
-            </div>
-        {% endif %}
+        </div>
     </div>
 </div>
 {% endblock %}

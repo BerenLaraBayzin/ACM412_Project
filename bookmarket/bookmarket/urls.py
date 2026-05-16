@@ -4,11 +4,11 @@ from django.conf import settings
 from django.conf.urls.static import static
 
 urlpatterns = [
-    path('admin/', admin.site.register),
+    path('admin/', admin.site.urls),
     path('users/', include('users.urls')),
-    path('', include('books.urls')), # Kitaplar ana sayfa olacak
+    path('api/', include('books.api_urls')),
+    path('', include('books.urls')),
 ]
 
-# Medya dosyalarını (kitap resimleri) tarayıcıda görebilmek için:
 if settings.DEBUG:
     urlpatterns += static(settings.MEDIA_URL, document_root=settings.MEDIA_ROOT)

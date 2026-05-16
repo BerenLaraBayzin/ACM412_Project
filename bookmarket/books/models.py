@@ -27,6 +27,15 @@ class Book(models.Model):
     image = models.ImageField(upload_to='book_images/')
     is_sold = models.BooleanField(default=False)
     created_at = models.DateTimeField(auto_now_add=True)
+    favorited_by = models.ManyToManyField(
+        User, related_name='favorite_books', blank=True
+    )
+
+    class Meta:
+        ordering = ['-created_at']
+        indexes = [
+            models.Index(fields=['is_sold', '-created_at']),
+        ]
 
     def __str__(self):
         return self.title

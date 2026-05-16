@@ -1,5 +1,4 @@
 from collections import OrderedDict
-from urllib.parse import urlencode
 
 from django.contrib import messages
 from django.contrib.auth import get_user_model
@@ -7,8 +6,9 @@ from django.contrib.auth.decorators import login_required
 from django.core.paginator import Paginator
 from django.db import transaction
 from django.db.models import Q
-from django.http import HttpResponseForbidden
+from django.http import HttpResponseForbidden, JsonResponse
 from django.shortcuts import get_object_or_404, redirect, render
+from django.views.decorators.http import require_POST
 
 from .forms import BookForm, MessageForm, OrderPurchaseForm
 from .models import Book, Category, Message, Order
@@ -58,6 +58,14 @@ def book_list(request):
     paginator = Paginator(qs, 9)
     page_obj = paginator.get_page(request.GET.get('page'))
 
+    user_favorite_ids = set()
+    if request.user.is_authenticated:
+        user_favorite_ids = set(
+            request.user.favorite_books.filter(
+                pk__in=[b.pk for b in page_obj]
+            ).values_list('pk', flat=True)
+        )
+
     context = {
         'page_obj': page_obj,
         'books': page_obj,
@@ -68,6 +76,7 @@ def book_list(request):
         'filter_min_price': request.GET.get('min_price', ''),
         'filter_max_price': request.GET.get('max_price', ''),
         'querystring': _filter_querystring(request),
+        'user_favorite_ids': user_favorite_ids,
     }
     return render(request, 'books/book_list.html', context)
 
@@ -77,7 +86,10 @@ def book_detail(request, pk):
         Book.objects.select_related('category', 'seller'),
         pk=pk,
     )
-    context = {'book': book}
+    context = {
+        'book': book,
+        'favorite_count': book.favorited_by.count(),
+    }
     user = request.user
     if user.is_authenticated:
         has_order = Order.objects.filter(book=book).exists()
@@ -89,6 +101,7 @@ def book_detail(request, pk):
         context['can_message'] = (
             not book.is_sold and book.seller_id != user.id
         )
+        context['is_favorited'] = book.favorited_by.filter(pk=user.pk).exists()
         if context['can_message']:
             has_thread = Message.objects.filter(
                 book=book,
@@ -102,6 +115,56 @@ def book_detail(request, pk):
             Order.objects.filter(book=book).select_related('buyer').first()
         )
     return render(request, 'books/book_detail.html', context)
+
+
+@login_required
+@require_POST
+def favorite_toggle(request, pk):
+    book = get_object_or_404(Book, pk=pk)
+    user = request.user
+    if book.favorited_by.filter(pk=user.pk).exists():
+        book.favorited_by.remove(user)
+        favorited = False
+    else:
+        book.favorited_by.add(user)
+        favorited = True
+    return JsonResponse({
+        'favorited': favorited,
+        'favorite_count': book.favorited_by.count(),
+    })
+
+
+@login_required
+def favorites_list(request):
+    qs = (
+        request.user.favorite_books
+        .select_related('category', 'seller')
+        .order_by('-created_at')
+    )
+    return render(request, 'books/favorites_list.html', {'books': qs})
+
+
+@login_required
+@require_POST
+def message_send_ajax(request, book_pk, user_pk):
+    book = get_object_or_404(Book, pk=book_pk)
+    with_user = get_object_or_404(get_user_model(), pk=user_pk)
+    if not _thread_allowed(request.user, book, with_user) and not (
+        not book.is_sold and book.seller_id == with_user.id
+    ):
+        return JsonResponse({'error': 'forbidden'}, status=403)
+    body = (request.POST.get('body') or '').strip()
+    if not body:
+        return JsonResponse({'error': 'empty'}, status=400)
+    msg = Message.objects.create(
+        sender=request.user, receiver=with_user, book=book, body=body,
+    )
+    return JsonResponse({
+        'id': msg.id,
+        'body': msg.body,
+        'sender': msg.sender.username,
+        'sent_at': msg.sent_at.strftime('%d.%m.%Y %H:%M'),
+    })
 
 
 @login_required
