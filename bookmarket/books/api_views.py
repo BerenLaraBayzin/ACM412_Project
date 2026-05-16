@@ -1,3 +1,14 @@
+"""Django REST Framework viewset'leri.
+
+Endpoint'ler:
+  - ``GET  /api/books/``                Liste (filtre: q, category, condition, is_sold)
+  - ``POST /api/books/``                Yeni ilan (auth)
+  - ``GET  /api/books/{id}/``           Detay
+  - ``PATCH/PUT /api/books/{id}/``      Düzenle (sahip)
+  - ``DELETE /api/books/{id}/``         Sil (sahip)
+  - ``POST /api/books/{id}/favorite/``  Favori toggle (auth)
+  - ``GET  /api/categories/``           Kategoriler
+"""
 from django.db.models import Count, Q
 from rest_framework import permissions, status, viewsets
 from rest_framework.decorators import action
@@ -8,6 +19,8 @@ from .serializers import BookCreateSerializer, BookSerializer, CategorySerialize
 
 
 class IsSellerOrReadOnly(permissions.BasePermission):
+    """Yalnızca ilanın sahibi yazma/silme yapabilir; herkes okuyabilir."""
+
     def has_object_permission(self, request, view, obj):
         if request.method in permissions.SAFE_METHODS:
             return True
@@ -15,12 +28,21 @@ class IsSellerOrReadOnly(permissions.BasePermission):
 
 
 class CategoryViewSet(viewsets.ReadOnlyModelViewSet):
+    """Kategori okuma uçları (oluşturma admin paneli üzerinden)."""
+
     queryset = Category.objects.all().order_by('name')
     serializer_class = CategorySerializer
     permission_classes = [permissions.AllowAny]
 
 
 class BookViewSet(viewsets.ModelViewSet):
+    """Kitap CRUD + custom favorite action.
+
+    Liste query parametreleri: ``q``, ``category``, ``condition``, ``is_sold``.
+    Liste sorgusunda M2M ``favorited_by`` üzerinden ``Count`` ile favori sayısı
+    sayfa başına tek sorguda hesaplanır.
+    """
+
     permission_classes = [permissions.IsAuthenticatedOrReadOnly, IsSellerOrReadOnly]
 
     def get_queryset(self):
@@ -54,6 +76,7 @@ class BookViewSet(viewsets.ModelViewSet):
 
     @action(detail=True, methods=['post'], permission_classes=[permissions.IsAuthenticated])
     def favorite(self, request, pk=None):
+        """Custom action: M2M `Book.favorited_by` ilişkisini toggle eder."""
         book = self.get_object()
         user = request.user
         if book.favorited_by.filter(pk=user.pk).exists():

@@ -1,37 +1,71 @@
 {% extends 'base.html' %}
 
+{% block title %}{{ user.username }} — Profil{% endblock %}
+
 {% block content %}
-<h2>Profil — {{ user.username }}</h2>
-<p class="text-muted">{{ user.email }}</p>
-
-<h3 class="h5 mt-4">İlanlarım</h3>
-{% if listings %}
-    <div class="list-group">
-        {% for book in listings %}
-            <a href="{% url 'book_detail' book.pk %}" class="list-group-item list-group-item-action d-flex justify-content-between align-items-center">
-                <span>{{ book.title }} — {{ book.price }} TL</span>
-                {% if book.is_sold %}
-                    <span class="badge bg-secondary">Satıldı</span>
-                {% else %}
-                    <span class="badge bg-success">Aktif</span>
-                {% endif %}
-            </a>
-        {% endfor %}
+<div style="padding-top: 3rem;">
+    <div class="section-head">
+        <div>
+            <div style="font-size:0.78rem; font-weight:600; letter-spacing:0.12em; text-transform:uppercase; color:var(--text-muted); margin-bottom:0.5rem;">Profil</div>
+            <h2>{{ user.username }}</h2>
+            <div class="sub">{{ user.email|default:"E-posta yok" }} · Üye: {{ user.date_joined|date:"M Y" }}</div>
+        </div>
+        <a class="btn btn-solid" href="{% url 'book_create' %}">+ Yeni Kitap Sat</a>
     </div>
-{% else %}
-    <p>Henüz ilan vermediniz. <a href="{% url 'book_create' %}">Kitap sat</a></p>
-{% endif %}
 
-<h3 class="h5 mt-4">Satın aldıklarım</h3>
-{% if purchases %}
-    <div class="list-group">
-        {% for o in purchases %}
-            <a href="{% url 'book_detail' o.book.pk %}" class="list-group-item list-group-item-action">
-                {{ o.book.title }} — {{ o.ordered_at|date:"d.m.Y" }}
-            </a>
-        {% endfor %}
+    <div class="section-head" style="margin-top: 3rem;">
+        <div>
+            <h2>İlanlarım</h2>
+            <div class="sub">{{ listings|length }} kitap listelendi</div>
+        </div>
     </div>
-{% else %}
-    <p class="text-muted">Henüz satın aldığınız kitap yok.</p>
-{% endif %}
+    {% if listings %}
+        <div style="margin-bottom: 3rem;">
+            {% for book in listings %}
+                <a class="listing-item thread-item" href="{% url 'book_detail' book.pk %}">
+                    <div class="head">
+                        <div class="title">{{ book.title }}</div>
+                        <div class="ts">
+                            {% if book.is_sold %}
+                                <span class="detail-pill" style="color: var(--text-muted); border-color: var(--line);">Satıldı</span>
+                            {% else %}
+                                <span class="detail-pill accent">Aktif</span>
+                            {% endif %}
+                        </div>
+                    </div>
+                    <div class="other">{{ book.author }} · {{ book.price|floatformat:0 }} ₺ · {{ book.get_condition_display }}</div>
+                </a>
+            {% endfor %}
+        </div>
+    {% else %}
+        <div class="empty">
+            <div class="emoji">📚</div>
+            <h3>Henüz ilan vermedin</h3>
+            <p>İlk kitabını listele, satışa başla.</p>
+            <a href="{% url 'book_create' %}" class="btn btn-solid" style="margin-top:1rem;">Kitap Sat</a>
+        </div>
+    {% endif %}
+
+    <div class="section-head" style="margin-top: 3rem;">
+        <div>
+            <h2>Satın aldıklarım</h2>
+            <div class="sub">{{ purchases|length }} sipariş</div>
+        </div>
+    </div>
+    {% if purchases %}
+        <div style="margin-bottom: 3rem;">
+            {% for o in purchases %}
+                <a class="listing-item thread-item" href="{% url 'book_detail' o.book.pk %}">
+                    <div class="head">
+                        <div class="title">{{ o.book.title }}</div>
+                        <div class="ts">{{ o.ordered_at|date:"d M Y" }}</div>
+                    </div>
+                    <div class="other">{{ o.book.author }} · {{ o.book.price|floatformat:0 }} ₺</div>
+                </a>
+            {% endfor %}
+        </div>
+    {% else %}
+        <p class="text-muted" style="color: var(--text-muted);">Henüz bir kitap satın almadın.</p>
+    {% endif %}
+</div>
 {% endblock %}

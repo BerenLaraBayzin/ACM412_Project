@@ -3,37 +3,40 @@
 {% block title %}{{ with_user.username }} ile mesajlaşma — BookMarket{% endblock %}
 
 {% block content %}
-<div class="d-flex justify-content-between align-items-center mb-3">
-    <div>
-        <h2 class="h4 mb-0">{{ book.title }}</h2>
-        <small class="text-muted">{{ with_user.username }} ile konuşma</small>
-    </div>
-    <a href="{% url 'message_list' %}" class="btn btn-outline-secondary btn-sm">Tüm mesajlar</a>
-</div>
-
-<div class="border rounded p-3 mb-3 bg-light" style="max-height: 460px; overflow-y: auto;" data-thread-messages>
-    {% for m in thread_messages %}
-        <div class="d-flex {% if m.sender_id == user.id %}justify-content-end{% endif %}">
-            <div class="message-bubble {% if m.sender_id == user.id %}mine{% endif %}">
-                <div class="body">{{ m.body|linebreaksbr }}</div>
-                <div class="meta">{{ m.sender.username }} · {{ m.sent_at|date:"d.m.Y H:i" }}</div>
-            </div>
+<div class="form-page wide">
+    <div class="section-head" style="margin-top: 3rem;">
+        <div>
+            <h2>{{ book.title }}</h2>
+            <div class="sub">{{ with_user.username }} ile konuşma</div>
         </div>
-    {% empty %}
-        <p class="text-muted mb-0">Henüz mesaj yok.</p>
-    {% endfor %}
-</div>
-
-<form method="post"
-      action="{% url 'message_send_ajax' book.pk with_user.pk %}"
-      data-ajax-message
-      data-username="{{ user.username }}"
-      style="max-width: 640px;">
-    {% csrf_token %}
-    <div class="mb-2">
-        <textarea name="body" class="form-control" rows="2" placeholder="Mesajınızı yazın…" required></textarea>
+        <a href="{% url 'message_list' %}" class="btn">Tümü</a>
     </div>
-    <button type="submit" class="btn btn-primary">Gönder</button>
-    <noscript><small class="text-muted ms-2">Tarayıcı JS kapalı; form gönderildiğinde normal sayfa yüklemesi yapılır.</small></noscript>
-</form>
+
+    <div class="thread-window" data-thread-messages>
+        {% for m in thread_messages %}
+            <div class="d-flex {% if m.sender_id == user.id %}justify-content-end{% endif %}" style="display:flex; {% if m.sender_id == user.id %}justify-content:flex-end;{% endif %}">
+                <div class="message-bubble {% if m.sender_id == user.id %}mine{% endif %}">
+                    <div class="body">{{ m.body|linebreaksbr }}</div>
+                    <div class="meta">{{ m.sender.username }} · {{ m.sent_at|date:"d M H:i" }}</div>
+                </div>
+            </div>
+        {% empty %}
+            <p style="color:var(--text-muted); margin:0;">Henüz mesaj yok.</p>
+        {% endfor %}
+    </div>
+
+    <form method="post"
+          action="{% url 'message_send_ajax' book.pk with_user.pk %}"
+          data-ajax-message
+          data-username="{{ user.username }}"
+          class="form-card"
+          style="padding: 1rem;">
+        {% csrf_token %}
+        <textarea name="body" rows="2" placeholder="Mesajını yaz..." required></textarea>
+        <div class="form-actions">
+            <button type="submit" class="btn btn-solid">Gönder</button>
+            <noscript><small style="color:var(--text-muted);">JS kapalı; normal form gönderimi yapılır.</small></noscript>
+        </div>
+    </form>
+</div>
 {% endblock %}

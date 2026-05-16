@@ -1,11 +1,21 @@
 {% extends 'base.html' %}
 
+{% block title %}İlanı sil — {{ book.title }}{% endblock %}
+
 {% block content %}
-<h2>İlanı sil</h2>
-<p><strong>{{ book.title }}</strong> ilanını kalıcı olarak silmek istediğinize emin misiniz?</p>
-<form method="post" class="d-flex gap-2">
-    {% csrf_token %}
-    <button type="submit" class="btn btn-danger">Evet, sil</button>
-    <a href="{% url 'book_detail' book.pk %}" class="btn btn-outline-secondary">Vazgeç</a>
-</form>
+<div class="form-page">
+    <div class="form-header">
+        <div class="eyebrow" style="color: var(--danger);">Dikkat</div>
+        <h1>İlanı silmek istediğine emin misin?</h1>
+        <p><strong>{{ book.title }}</strong> kalıcı olarak silinecek.</p>
+    </div>
+
+    <div class="form-card">
+        <form method="post" style="display:flex; gap:0.5rem; flex-wrap:wrap;">
+            {% csrf_token %}
+            <button type="submit" class="btn btn-accent" style="background:var(--danger); border-color:var(--danger);">Evet, sil</button>
+            <a href="{% url 'book_detail' book.pk %}" class="btn">Vazgeç</a>
+        </form>
+    </div>
+</div>
 {% endblock %}

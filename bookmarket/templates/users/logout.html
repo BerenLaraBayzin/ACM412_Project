@@ -1,6 +1,17 @@
 {% extends 'base.html' %}
 
+{% block title %}Çıkış Yapıldı — BookMarket{% endblock %}
+
 {% block content %}
-<p class="lead">Çıkış yaptınız.</p>
-<a href="{% url 'book_list' %}" class="btn btn-primary">Ana sayfaya dön</a>
+<div class="form-page">
+    <div class="form-header">
+        <div class="eyebrow">Görüşürüz</div>
+        <h1>Çıkış yapıldı.</h1>
+        <p>Tekrar görüşmek üzere.</p>
+    </div>
+    <div class="form-actions" style="justify-content:center;">
+        <a href="{% url 'book_list' %}" class="btn btn-solid">Anasayfaya dön</a>
+        <a href="{% url 'login' %}" class="btn">Tekrar giriş yap</a>
+    </div>
+</div>
 {% endblock %}

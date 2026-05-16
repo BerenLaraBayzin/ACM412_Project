@@ -229,6 +229,37 @@ class BookAPITests(TestCase):
         self.assertTrue(r.json()["favorited"])
 
 
+class IsbnLookupTests(TestCase):
+    def setUp(self):
+        self.user = User.objects.create_user(username="ali", password="testpass123")
+
+    def test_requires_login(self):
+        r = self.client.get(reverse("isbn_lookup"), {"isbn": "9780451524935"})
+        self.assertEqual(r.status_code, 302)
+
+    def test_invalid_isbn(self):
+        self.client.login(username="ali", password="testpass123")
+        r = self.client.get(reverse("isbn_lookup"), {"isbn": "abc"})
+        self.assertEqual(r.status_code, 400)
+        self.assertEqual(r.json()["error"], "invalid_isbn")
+
+    def test_empty_isbn(self):
+        self.client.login(username="ali", password="testpass123")
+        r = self.client.get(reverse("isbn_lookup"), {"isbn": ""})
+        self.assertEqual(r.status_code, 400)
+
+    def test_short_isbn(self):
+        self.client.login(username="ali", password="testpass123")
+        r = self.client.get(reverse("isbn_lookup"), {"isbn": "12345"})
+        self.assertEqual(r.status_code, 400)
+
+
+class ErrorPageTests(TestCase):
+    def test_404_route(self):
+        r = self.client.get("/bu-sayfa-yok/")
+        self.assertEqual(r.status_code, 404)
+
+
 class UserRegisterTests(TestCase):
     def test_register_creates_user(self):
         r = self.client.post(

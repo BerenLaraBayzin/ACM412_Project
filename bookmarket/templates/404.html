@@ -1,0 +1,12 @@
+{% extends 'base.html' %}
+
+{% block title %}Sayfa bulunamadı — BookMarket{% endblock %}
+
+{% block content %}
+<div class="error-page">
+    <div class="error-code">404</div>
+    <h1>Bu sayfa kayıp.</h1>
+    <p>Aradığın kitap satılmış, link kopuk olabilir ya da hiç var olmamış. Anasayfadan tekrar başla.</p>
+    <a href="{% url 'book_list' %}" class="btn btn-solid">Anasayfaya dön</a>
+</div>
+{% endblock %}

@@ -1,21 +1,35 @@
 {% extends 'base.html' %}
 
+{% block title %}Mesajlarım — BookMarket{% endblock %}
+
 {% block content %}
-<h2>Mesajlarım</h2>
-{% if threads %}
-    <div class="list-group mt-3">
-        {% for t in threads %}
-            <a href="{% url 'message_thread' t.book.pk t.other.pk %}" class="list-group-item list-group-item-action">
-                <div class="d-flex w-100 justify-content-between">
-                    <strong>{{ t.book.title }}</strong>
-                    <small class="text-muted">{{ t.last.sent_at|date:"d.m.Y H:i" }}</small>
-                </div>
-                <small class="text-muted">{{ t.other.username }}</small>
-                <p class="mb-0 mt-1 text-truncate">{{ t.last.body }}</p>
-            </a>
-        {% endfor %}
+<div style="padding-top: 3rem;">
+    <div class="section-head">
+        <div>
+            <h2>Mesajlarım</h2>
+            <div class="sub">{{ threads|length }} konuşma</div>
+        </div>
     </div>
-{% else %}
-    <p class="mt-3">Henüz mesajınız yok. Bir ilanın detayından satıcıya yazabilirsiniz.</p>
-{% endif %}
+    {% if threads %}
+        <div>
+            {% for t in threads %}
+                <a class="thread-item" href="{% url 'message_thread' t.book.pk t.other.pk %}">
+                    <div class="head">
+                        <div class="title">{{ t.book.title }}</div>
+                        <div class="ts">{{ t.last.sent_at|date:"d M Y · H:i" }}</div>
+                    </div>
+                    <div class="other">{{ t.other.username }} ile</div>
+                    <div class="preview">{{ t.last.body }}</div>
+                </a>
+            {% endfor %}
+        </div>
+    {% else %}
+        <div class="empty">
+            <div class="emoji">✉</div>
+            <h3>Henüz mesajın yok</h3>
+            <p>Bir ilanın detayında "Satıcıya yaz" diyerek başlayabilirsin.</p>
+            <a href="{% url 'book_list' %}" class="btn btn-solid" style="margin-top:1rem;">Kitaplara göz at</a>
+        </div>
+    {% endif %}
+</div>
 {% endblock %}

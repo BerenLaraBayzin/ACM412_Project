@@ -68,6 +68,57 @@
     }
   });
 
+  // ISBN lookup (Open Library)
+  const isbnBtn = document.getElementById('isbn-fetch');
+  const isbnInput = document.getElementById('isbn');
+  const isbnResult = document.getElementById('isbn-result');
+  const coverUrlField = document.getElementById('cover_url');
+  if (isbnBtn && isbnInput && isbnResult) {
+    isbnBtn.addEventListener('click', async function () {
+      const isbn = (isbnInput.value || '').replace(/[\s-]/g, '');
+      if (!/^\d{10}(\d{3})?$/.test(isbn)) {
+        isbnResult.className = 'isbn-result is-shown is-error';
+        isbnResult.textContent = '10 veya 13 haneli ISBN girin.';
+        return;
+      }
+      isbnResult.className = 'isbn-result is-shown';
+      isbnResult.textContent = 'Aranıyor…';
+      isbnBtn.disabled = true;
+      try {
+        const res = await fetch('/isbn-lookup/?isbn=' + encodeURIComponent(isbn), {
+          credentials: 'same-origin',
+        });
+        if (!res.ok) {
+          const err = await res.json().catch(() => ({}));
+          throw new Error(err.error || 'lookup_failed');
+        }
+        const data = await res.json();
+        isbnResult.className = 'isbn-result is-shown';
+        isbnResult.innerHTML =
+          (data.cover_url ? '<img src="' + data.cover_url + '" alt="">' : '') +
+          '<div class="meta"><strong></strong><br><span></span></div>';
+        isbnResult.querySelector('strong').textContent = data.title || '(başlık yok)';
+        isbnResult.querySelector('span').textContent = data.author || '';
+        // Form alanlarını doldur
+        const titleField = document.querySelector('#book-form input[name="title"]');
+        const authorField = document.querySelector('#book-form input[name="author"]');
+        if (titleField && data.title) titleField.value = data.title;
+        if (authorField && data.author) authorField.value = data.author;
+        if (coverUrlField && data.cover_url) coverUrlField.value = data.cover_url;
+      } catch (err) {
+        isbnResult.className = 'isbn-result is-shown is-error';
+        const msg = {
+          invalid_isbn: 'Geçersiz ISBN biçimi.',
+          not_found: 'Bu ISBN için kayıt bulunamadı.',
+          api_unreachable: 'Open Library yanıt vermedi, sonra dene.',
+        }[err.message] || 'Bir hata oluştu.';
+        isbnResult.textContent = msg;
+      } finally {
+        isbnBtn.disabled = false;
+      }
+    });
+  }
+
   const form = document.querySelector('form[data-ajax-message]');
   if (form) {
     const list = document.querySelector('[data-thread-messages]');

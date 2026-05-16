@@ -1,3 +1,7 @@
+"""HTML view'ları: kitap CRUD, sipariş akışı, mesajlaşma, favoriler ve ISBN lookup.
+
+REST API uçları için bkz: ``books.api_views``.
+"""
 from collections import OrderedDict
 from datetime import timedelta
 
@@ -17,6 +21,7 @@ from .models import Book, Category, Message, Order
 
 
 def _mark_new_flag(books):
+    """Son 7 gün içinde eklenen kitaplara ``is_new=True`` bayrağı atar."""
     cutoff = timezone.now() - timedelta(days=7)
     for b in books:
         b.is_new = b.created_at >= cutoff
@@ -32,6 +37,11 @@ def _filter_querystring(request, exclude=('page',)):
 
 
 def book_list(request):
+    """Anasayfa + arama/filtre sonuçları.
+
+    Filtre yokken (anasayfa) editör seçimi, kategori rafları ve istatistikler;
+    filtre varken sayfalanmış ürün ızgarası gösterilir.
+    """
     qs = (
         Book.objects.filter(is_sold=False)
         .select_related('category', 'seller')
@@ -64,32 +74,60 @@ def book_list(request):
     except (TypeError, ValueError):
         pass
 
-    paginator = Paginator(qs, 12)
-    page_obj = paginator.get_page(request.GET.get('page'))
-    _mark_new_flag(page_obj.object_list)
-
     has_filters = any([q, category_id, condition, request.GET.get('min_price'),
                        request.GET.get('max_price')])
+    show_home_widgets = not has_filters
+
+    deal_book = None
     featured_books = []
-    if not has_filters and page_obj.number == 1:
+    newest_books = []
+    category_cards = []
+    category_shelves = []
+    all_widget_pks = []
+
+    if show_home_widgets:
+        deal_book = (
+            Book.objects.filter(is_sold=False, condition__in=['used', 'good'])
+            .select_related('category', 'seller')
+            .order_by('-price')
+            .first()
+        )
         featured_books = list(
             Book.objects.filter(is_sold=False)
             .select_related('category', 'seller')
             .annotate(fav_count=Count('favorited_by'))
-            .filter(fav_count__gt=0)
-            .order_by('-fav_count', '-created_at')[:4]
+            .order_by('-fav_count', '-created_at')[:6]
         )
-        _mark_new_flag(featured_books)
+        newest_books = list(
+            Book.objects.filter(is_sold=False)
+            .select_related('category', 'seller')
+            .order_by('-created_at')[:6]
+        )
+        category_cards = _build_category_cards()
+        category_shelves = _build_category_shelves(limit_per_cat=4)
+        all_widget_pks = (
+            [deal_book.pk] if deal_book else []
+        ) + [b.pk for b in featured_books] + [b.pk for b in newest_books] + [
+            b.pk for shelf in category_shelves for b in shelf['books']
+        ]
+
+    page_obj = None
+    if not show_home_widgets:
+        paginator = Paginator(qs, 12)
+        page_obj = paginator.get_page(request.GET.get('page'))
 
     user_favorite_ids = set()
     if request.user.is_authenticated:
-        candidate_pks = [b.pk for b in page_obj] + [b.pk for b in featured_books]
+        candidate_pks = list(all_widget_pks)
+        if page_obj is not None:
+            candidate_pks += [b.pk for b in page_obj]
         if candidate_pks:
             user_favorite_ids = set(
                 request.user.favorite_books.filter(pk__in=candidate_pks)
                 .values_list('pk', flat=True)
             )
 
+    nav_categories = list(Category.objects.all().order_by('name'))[:8]
     total_count = Book.objects.filter(is_sold=False).count()
     seller_count = (
         Book.objects.filter(is_sold=False)
@@ -99,7 +137,13 @@ def book_list(request):
     context = {
         'page_obj': page_obj,
         'books': page_obj,
+        'show_home_widgets': show_home_widgets,
+        'deal_book': deal_book,
         'featured_books': featured_books,
+        'newest_books': newest_books,
+        'category_cards': category_cards,
+        'category_shelves': category_shelves,
+        'nav_categories': nav_categories,
         'categories': Category.objects.all().order_by('name'),
         'filter_q': q,
         'filter_category': category_id or '',
@@ -114,7 +158,50 @@ def book_list(request):
     return render(request, 'books/book_list.html', context)
 
 
+CATEGORY_ICONS = {
+    'roman':           '📚',
+    'felsefe':         '💭',
+    'bilim-teknoloji': '🔬',
+    'tarih':           '🏛',
+    'siir':            '🪶',
+    'polisiye':        '🕵',
+    'cocuk-genc':      '🧸',
+    'kisisel-gelisim': '🌱',
+}
+
+
+def _build_category_cards():
+    cats = (
+        Category.objects.annotate(
+            book_count=Count('books', filter=Q(books__is_sold=False)),
+        ).order_by('-book_count')
+    )
+    cards = []
+    for c in cats:
+        cards.append({
+            'pk': c.pk,
+            'name': c.name,
+            'book_count': c.book_count,
+            'icon': CATEGORY_ICONS.get(c.slug, '📖'),
+        })
+    return cards
+
+
+def _build_category_shelves(limit_per_cat=4):
+    shelves = []
+    for c in Category.objects.all().order_by('name'):
+        books = list(
+            Book.objects.filter(is_sold=False, category=c)
+            .select_related('category', 'seller')
+            .order_by('-created_at')[:limit_per_cat]
+        )
+        if len(books) >= 2:
+            shelves.append({'pk': c.pk, 'name': c.name, 'books': books})
+    return shelves[:4]
+
+
 def book_detail(request, pk):
+    """Kitap detay sayfası. Kullanıcının izinlerine göre satın al/yaz/düzenle butonlarını koşullandırır."""
     book = get_object_or_404(
         Book.objects.select_related('category', 'seller'),
         pk=pk,
@@ -151,8 +238,63 @@ def book_detail(request, pk):
 
 
 @login_required
+def isbn_lookup(request):
+    """Open Library Books API ile ISBN'den başlık, yazar ve kapak URL'si çek.
+
+    Endpoint: GET /isbn-lookup/?isbn=9780451524935
+    Kullanılan API: https://openlibrary.org/dev/docs/api/books
+    Sadece giriş yapmış kullanıcılar; rate-limit yok (Open Library açık).
+    """
+    import json
+    import urllib.error
+    import urllib.parse
+    import urllib.request
+
+    isbn = (request.GET.get('isbn') or '').strip().replace('-', '').replace(' ', '')
+    if not isbn or not isbn.isdigit() or len(isbn) not in (10, 13):
+        return JsonResponse({'error': 'invalid_isbn'}, status=400)
+
+    api_url = (
+        'https://openlibrary.org/api/books?bibkeys=ISBN:'
+        + urllib.parse.quote(isbn)
+        + '&jscmd=data&format=json'
+    )
+    try:
+        req = urllib.request.Request(
+            api_url, headers={'User-Agent': 'BookMarket/1.0'},
+        )
+        with urllib.request.urlopen(req, timeout=6) as resp:
+            data = json.loads(resp.read().decode('utf-8'))
+    except (urllib.error.URLError, TimeoutError, ValueError):
+        return JsonResponse({'error': 'api_unreachable'}, status=502)
+
+    key = f'ISBN:{isbn}'
+    info = data.get(key)
+    if not info:
+        return JsonResponse({'error': 'not_found'}, status=404)
+
+    cover_url = ''
+    cover = info.get('cover') or {}
+    cover_url = cover.get('large') or cover.get('medium') or cover.get('small') or ''
+    if not cover_url:
+        cover_url = f'https://covers.openlibrary.org/b/isbn/{isbn}-L.jpg'
+
+    return JsonResponse({
+        'title': info.get('title', ''),
+        'author': ', '.join(a.get('name', '') for a in info.get('authors', [])),
+        'cover_url': cover_url,
+        'publish_date': info.get('publish_date', ''),
+    })
+
+
+@login_required
 @require_POST
 def favorite_toggle(request, pk):
+    """AJAX endpoint: bir kitabı kullanıcının favorilerine ekler/çıkarır.
+
+    POST `/book/<pk>/favori/` → JSON `{favorited: bool, favorite_count: int}`.
+    M2M `Book.favorited_by` ilişkisini günceller.
+    """
     book = get_object_or_404(Book, pk=pk)
     user = request.user
     if book.favorited_by.filter(pk=user.pk).exists():
@@ -184,6 +326,7 @@ def favorites_list(request):
 @login_required
 @require_POST
 def message_send_ajax(request, book_pk, user_pk):
+    """AJAX endpoint: mesaj iş parçacığında canlı yanıt gönderir."""
     book = get_object_or_404(Book, pk=book_pk)
     with_user = get_object_or_404(get_user_model(), pk=user_pk)
     if not _thread_allowed(request.user, book, with_user) and not (
@@ -206,11 +349,21 @@ def message_send_ajax(request, book_pk, user_pk):
 
 @login_required
 def book_create(request):
+    """Yeni kitap ilanı oluşturma.
+
+    Görsel iki kaynaktan gelebilir:
+      1) Form'da yüklenmiş `image` dosyası (öncelikli).
+      2) Gizli `cover_url` alanı — Open Library ISBN lookup sonucu,
+         JS tarafından doldurulur; bu URL sunucuda indirilip ImageField'a kaydedilir.
+    """
     if request.method == 'POST':
         form = BookForm(request.POST, request.FILES)
         if form.is_valid():
             book = form.save(commit=False)
             book.seller = request.user
+            cover_url = (request.POST.get('cover_url') or '').strip()
+            if cover_url and not request.FILES.get('image'):
+                _attach_remote_cover(book, cover_url)
             book.save()
             messages.success(request, 'İlanınız yayınlandı.')
             return redirect('book_list')
@@ -221,6 +374,22 @@ def book_create(request):
         'books/book_form.html',
         {'form': form, 'form_title': 'Yeni kitap ilanı'},
     )
+
+
+def _attach_remote_cover(book, url):
+    """Open Library kapak URL'sini sunucuya indirip Book.image alanına ata."""
+    import urllib.error
+    import urllib.request
+    from django.core.files.base import ContentFile
+    try:
+        req = urllib.request.Request(url, headers={'User-Agent': 'BookMarket/1.0'})
+        with urllib.request.urlopen(req, timeout=8) as resp:
+            data = resp.read()
+        if len(data) < 500:
+            return  # boş/eksik kapak — pas geç
+        book.image.save(f'isbn_{book.title[:30]}.jpg', ContentFile(data), save=False)
+    except (urllib.error.URLError, TimeoutError):
+        return
 
 
 @login_required
@@ -257,6 +426,12 @@ def book_delete(request, pk):
 
 @login_required
 def order_create(request, pk):
+    """Satın alma akışı.
+
+    Yarış-koşulu güvenliği: ``transaction.atomic`` içinde
+    ``Book.objects.select_for_update()`` ile kilitlenir; iki paralel satın alma
+    isteğinden yalnızca biri başarılı olur.
+    """
     book = get_object_or_404(
         Book.objects.select_related('seller'),
         pk=pk,

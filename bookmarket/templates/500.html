@@ -1,0 +1,12 @@
+{% extends 'base.html' %}
+
+{% block title %}Bir şey ters gitti — BookMarket{% endblock %}
+
+{% block content %}
+<div class="error-page">
+    <div class="error-code">500</div>
+    <h1>Bir şey ters gitti.</h1>
+    <p>Sunucumuzda beklenmedik bir hata oluştu. Birkaç saniye sonra tekrar dene.</p>
+    <a href="{% url 'book_list' %}" class="btn btn-solid">Anasayfaya dön</a>
+</div>
+{% endblock %}

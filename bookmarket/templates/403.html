@@ -1,0 +1,12 @@
+{% extends 'base.html' %}
+
+{% block title %}Erişim engellendi — BookMarket{% endblock %}
+
+{% block content %}
+<div class="error-page">
+    <div class="error-code">403</div>
+    <h1>Buraya erişim yok.</h1>
+    <p>Bu sayfayı görmek için gerekli yetkin yok ya da oturumun düşmüş olabilir.</p>
+    <a href="{% url 'login' %}" class="btn btn-solid">Giriş yap</a>
+</div>
+{% endblock %}

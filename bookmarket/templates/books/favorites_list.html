@@ -3,26 +3,28 @@
 {% block title %}Favorilerim — BookMarket{% endblock %}
 
 {% block content %}
-<div class="section-head">
-    <div>
-        <h2>❤ Favorilerim</h2>
-        <div class="subtitle">{{ books|length }} kitap</div>
+<section style="padding-top: 3rem;">
+    <div class="section-head">
+        <div>
+            <h2>Favorilerim</h2>
+            <div class="sub">{{ books|length }} kitap koleksiyonunda</div>
+        </div>
+        <a class="more" href="{% url 'book_list' %}">Daha fazla keşfet →</a>
     </div>
-    <a href="{% url 'book_list' %}" class="more-link">Daha fazla keşfet →</a>
-</div>
 
-{% if books %}
-<div class="book-grid">
-    {% for book in books %}
-        {% include 'books/_book_card.html' with book=book %}
-    {% endfor %}
-</div>
-{% else %}
-<div class="empty-state">
-    <div class="emoji">💔</div>
-    <h3>Henüz favorin yok</h3>
-    <p>Beğendiğin kitabın kartındaki ❤ simgesine bas — burada toplanır.</p>
-    <a href="{% url 'book_list' %}" class="btn btn-primary mt-2">Kitaplara göz at</a>
-</div>
-{% endif %}
+    {% if books %}
+    <div class="book-grid">
+        {% for book in books %}
+            {% include 'books/_book_card.html' with book=book %}
+        {% endfor %}
+    </div>
+    {% else %}
+    <div class="empty">
+        <div class="emoji">♡</div>
+        <h3>Henüz favorin yok</h3>
+        <p>Beğendiğin kitabın kartındaki ♡ simgesine bas — burada toplanır.</p>
+        <a href="{% url 'book_list' %}" class="btn btn-solid" style="margin-top:1rem;">Kitaplara göz at</a>
+    </div>
+    {% endif %}
+</section>
 {% endblock %}

@@ -10,6 +10,7 @@ urlpatterns = [
     path('book/<int:pk>/satin-al/', views.order_create, name='order_create'),
     path('book/<int:pk>/favori/', views.favorite_toggle, name='favorite_toggle'),
     path('favorilerim/', views.favorites_list, name='favorites_list'),
+    path('isbn-lookup/', views.isbn_lookup, name='isbn_lookup'),
     path('mesajlar/', views.message_list, name='message_list'),
     path(
         'book/<int:book_pk>/mesaj/',

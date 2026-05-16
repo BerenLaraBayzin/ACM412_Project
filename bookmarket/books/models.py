@@ -1,3 +1,13 @@
+"""Veri modelleri.
+
+İlişkiler:
+- ``Book.seller``        → ``User``        (ForeignKey, ilan sahibi)
+- ``Book.category``      → ``Category``    (ForeignKey, opsiyonel)
+- ``Book.favorited_by``  ↔ ``User``        (ManyToMany, favori ilişkisi)
+- ``Message.sender/receiver/book`` (ForeignKey × 3)
+- ``Order.book``         → ``Book``        (OneToOne — bir kitap bir kez satılır)
+- ``Order.buyer``        → ``User``        (ForeignKey)
+"""
 from django.db import models
 from django.contrib.auth.models import User
 
@@ -39,6 +49,24 @@ class Book(models.Model):
 
     def __str__(self):
         return self.title
+
+    @property
+    def original_price(self):
+        """Sıfır kitap fiyatı tahmini — ikinci el indirimi göstermek için."""
+        from decimal import Decimal
+        multiplier = {
+            'new':  Decimal('1.30'),
+            'good': Decimal('1.55'),
+            'used': Decimal('1.90'),
+        }.get(self.condition, Decimal('1.40'))
+        raw = self.price * multiplier
+        return (raw.quantize(Decimal('1')) // Decimal('5')) * Decimal('5') + Decimal('5')
+
+    @property
+    def discount_percent(self):
+        if not self.original_price or self.original_price <= self.price:
+            return 0
+        return int(round((1 - (float(self.price) / float(self.original_price))) * 100))
 
 class Message(models.Model):
     sender = models.ForeignKey(User, on_delete=models.CASCADE, related_name='sent_messages')

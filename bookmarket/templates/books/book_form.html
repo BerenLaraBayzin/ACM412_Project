@@ -1,25 +1,54 @@
 {% extends 'base.html' %}
 
+{% block title %}{{ form_title|default:"Kitap İlanı" }} — BookMarket{% endblock %}
+
 {% block content %}
-<h2>{{ form_title|default:"Kitap ilanı" }}</h2>
-<form method="post" enctype="multipart/form-data" class="mt-3" style="max-width: 640px;">
-    {% csrf_token %}
-    {{ form.non_field_errors }}
-    {% for field in form %}
-        <div class="mb-3">
-            <label class="form-label" for="{{ field.id_for_label }}">{{ field.label }}</label>
-            {{ field }}
-            {% if field.help_text %}<div class="form-text">{{ field.help_text }}</div>{% endif %}
-            {% for error in field.errors %}
-                <div class="invalid-feedback d-block">{{ error }}</div>
-            {% endfor %}
+<div class="form-page wide">
+    <div class="form-header">
+        <div class="eyebrow">{% if book %}Düzenle{% else %}Yeni İlan{% endif %}</div>
+        <h1>{{ form_title|default:"Kitap ilanı" }}</h1>
+        <p>Birkaç bilgi yeter — kapağı kendin yüklemek istemezsen ISBN ile çekiyoruz.</p>
+    </div>
+
+    <div class="form-card">
+        {% if not book %}
+        <div class="isbn-lookup">
+            <div style="font-size:0.84rem; font-weight:500; margin-bottom:0.5rem;">📚 Hızlı doldur — ISBN ile</div>
+            <div class="isbn-lookup-row">
+                <div class="field">
+                    <label class="field-label" for="isbn">ISBN</label>
+                    <input type="text" id="isbn" placeholder="örn. 9780451524935">
+                </div>
+                <button type="button" id="isbn-fetch" class="btn">Bul</button>
+            </div>
+            <div class="isbn-result" id="isbn-result"></div>
+            <div class="field-help" style="margin-top:0.55rem;">Open Library'den kapak ve başlık önerisi gelir — istersen değiştirebilirsin.</div>
         </div>
-    {% endfor %}
-    <button type="submit" class="btn btn-primary">Kaydet</button>
-    {% if book %}
-        <a href="{% url 'book_detail' book.pk %}" class="btn btn-link">İptal</a>
-    {% else %}
-        <a href="{% url 'book_list' %}" class="btn btn-link">İptal</a>
-    {% endif %}
-</form>
+        {% endif %}
+
+        <form method="post" enctype="multipart/form-data" id="book-form">
+            {% csrf_token %}
+            {{ form.non_field_errors }}
+            {% for field in form %}
+                <div class="field">
+                    <label class="field-label" for="{{ field.id_for_label }}">{{ field.label }}</label>
+                    {{ field }}
+                    {% if field.help_text %}<div class="field-help">{{ field.help_text }}</div>{% endif %}
+                    {% for error in field.errors %}
+                        <div class="field-error">{{ error }}</div>
+                    {% endfor %}
+                </div>
+            {% endfor %}
+            <input type="hidden" name="cover_url" id="cover_url">
+            <div class="form-actions">
+                <button type="submit" class="btn btn-solid">{% if book %}Güncelle{% else %}Yayınla{% endif %}</button>
+                {% if book %}
+                    <a href="{% url 'book_detail' book.pk %}" class="btn">Vazgeç</a>
+                {% else %}
+                    <a href="{% url 'book_list' %}" class="btn">İptal</a>
+                {% endif %}
+            </div>
+        </form>
+    </div>
+</div>
 {% endblock %}

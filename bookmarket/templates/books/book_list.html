@@ -1,113 +1,176 @@
 {% extends 'base.html' %}
 
-{% block title %}Kitaplar — BookMarket{% endblock %}
+{% block title %}{% if filter_q %}"{{ filter_q }}" — BookMarket{% else %}Modern İkinci El Kitap Pazarı — BookMarket{% endif %}{% endblock %}
 
 {% block content %}
+{% if show_home_widgets %}
 <section class="hero">
-    <span class="eyebrow">İkinci el kitap pazarı</span>
-    <h1>Sevdiğin kitabı bul, hazinendeki kitabı paylaş.</h1>
-    <p class="lead">Üniversite kitapları, romanlar, klasikler — uygun fiyatlarla, doğrudan satıcısından.</p>
+    <span class="eyebrow">★ İkinci el kitap pazarı</span>
+    <h1>Okunmuş kitaplar,<br><em>yeni okurlar.</em></h1>
+    <p class="sub">Depo değil, gerçek insanlar. Sevdiğin kitabı bul, hazinendeki kitabı paylaş — uygun fiyatlarla, doğrudan satıcısından.</p>
     <form class="hero-search" method="get" action="{% url 'book_list' %}">
-        <input type="search" name="q" placeholder="Kitap adı veya yazar ara..." value="{{ filter_q }}">
+        <input type="search" name="q" placeholder="Kitap adı, yazar veya konu ara...">
         <button type="submit">Ara</button>
     </form>
-    <div class="hero-stats">
-        <div><strong>{{ total_count }}</strong>kitap satılıyor</div>
-        <div><strong>{{ seller_count }}</strong>aktif satıcı</div>
-        <div><strong>{{ categories|length }}</strong>kategori</div>
+    <div class="hero-meta">
+        <span><strong>{{ total_count|default:"0" }}</strong> kitap</span>
+        <span class="divider"></span>
+        <span><strong>{{ seller_count|default:"0" }}</strong> satıcı</span>
+        <span class="divider"></span>
+        <span><strong>{{ nav_categories|length }}</strong> kategori</span>
     </div>
 </section>
 
-{% if featured_books %}
-<div class="section-head">
-    <div>
-        <h2>Öne çıkanlar</h2>
-        <div class="subtitle">En çok favorilenen kitaplar</div>
+{% if deal_book %}
+<a href="{% url 'book_detail' deal_book.pk %}" class="editors-pick" style="text-decoration:none; color:inherit;">
+    <div class="pick-info">
+        <div class="pick-label">Editör seçimi</div>
+        <h2>{{ deal_book.title }}</h2>
+        <div class="pick-author">{{ deal_book.author }}</div>
+        <p class="pick-description">{{ deal_book.description }}</p>
+        <div class="pick-price">
+            {{ deal_book.price|floatformat:0 }}<span class="cur">₺</span>
+        </div>
+        <span class="btn btn-solid">Hemen incele →</span>
     </div>
-</div>
-<div class="book-grid mb-4">
-    {% for book in featured_books %}
-        {% include 'books/_book_card.html' with book=book %}
-    {% endfor %}
-</div>
+    <div class="pick-cover">
+        {% if deal_book.image %}
+            <img src="{{ deal_book.image.url }}" alt="{{ deal_book.title }}">
+        {% endif %}
+    </div>
+</a>
 {% endif %}
 
-<div class="section-head">
-    <div>
-        <h2>Tüm kitaplar</h2>
-        <div class="subtitle">{{ page_obj.paginator.count }} sonuç</div>
-    </div>
-</div>
-
-<div class="cat-chips">
-    <a class="cat-chip {% if not filter_category %}is-active{% endif %}" href="{% url 'book_list' %}">Tümü</a>
-    {% for c in categories %}
-        <a class="cat-chip {% if filter_category == c.pk|stringformat:'s' %}is-active{% endif %}" href="?category={{ c.pk }}">{{ c.name }}</a>
-    {% endfor %}
-</div>
-
-<form method="get" class="filter-panel">
-    {% if filter_category %}<input type="hidden" name="category" value="{{ filter_category }}">{% endif %}
-    <div class="row g-3 align-items-end">
-        <div class="col-md-4">
-            <label for="id_q">Arama</label>
-            <input type="search" name="q" id="id_q" class="form-control" placeholder="Başlık veya yazar" value="{{ filter_q }}">
+{% if newest_books %}
+<section class="section">
+    <div class="section-head">
+        <div>
+            <h2>Yeni eklenenler</h2>
+            <div class="sub">Bu hafta listelenen kitaplar</div>
         </div>
-        <div class="col-md-2">
+        <a class="more" href="{% url 'book_list' %}">Tümü →</a>
+    </div>
+    <div class="book-grid">
+        {% for book in newest_books %}
+            {% include 'books/_book_card.html' with book=book %}
+        {% endfor %}
+    </div>
+</section>
+{% endif %}
+
+{% if featured_books %}
+<section class="section">
+    <div class="section-head">
+        <div>
+            <h2>En çok beğenilenler</h2>
+            <div class="sub">Topluluğun favori kitapları</div>
+        </div>
+        <a class="more" href="{% url 'book_list' %}">Tümü →</a>
+    </div>
+    <div class="book-grid">
+        {% for book in featured_books %}
+            {% include 'books/_book_card.html' with book=book %}
+        {% endfor %}
+    </div>
+</section>
+{% endif %}
+
+{% if nav_categories %}
+<section class="section">
+    <div class="section-head">
+        <div>
+            <h2>Kategoriler</h2>
+            <div class="sub">Hangi konuya bakmak istersin?</div>
+        </div>
+    </div>
+    <div class="chips">
+        {% for c in nav_categories %}
+            <a class="chip" href="{% url 'book_list' %}?category={{ c.pk }}">{{ c.name }}</a>
+        {% endfor %}
+    </div>
+</section>
+{% endif %}
+
+{% for shelf in category_shelves %}
+<section class="section">
+    <div class="section-head">
+        <div>
+            <h2>{{ shelf.name }}</h2>
+            <div class="sub">Bu kategoriden seçtiklerimiz</div>
+        </div>
+        <a class="more" href="{% url 'book_list' %}?category={{ shelf.pk }}">Tümü →</a>
+    </div>
+    <div class="book-grid">
+        {% for book in shelf.books %}
+            {% include 'books/_book_card.html' with book=book %}
+        {% endfor %}
+    </div>
+</section>
+{% endfor %}
+
+{% else %}
+<section style="padding-top: 3rem;">
+    <div class="section-head">
+        <div>
+            <h2>
+                {% if filter_q %}"{{ filter_q }}" araması{% elif filter_category %}Kategori sonuçları{% else %}Tüm kitaplar{% endif %}
+            </h2>
+            <div class="sub">{{ page_obj.paginator.count }} sonuç</div>
+        </div>
+    </div>
+
+    <form method="get" class="filter-bar">
+        {% if filter_category %}<input type="hidden" name="category" value="{{ filter_category }}">{% endif %}
+        <div class="field" style="flex:2;">
+            <label for="id_q">Arama</label>
+            <input type="search" name="q" id="id_q" placeholder="Başlık veya yazar" value="{{ filter_q }}">
+        </div>
+        <div class="field">
             <label for="id_condition">Durum</label>
-            <select name="condition" id="id_condition" class="form-select">
+            <select name="condition" id="id_condition">
                 <option value="">Tümü</option>
                 <option value="new" {% if filter_condition == "new" %}selected{% endif %}>Yeni gibi</option>
                 <option value="good" {% if filter_condition == "good" %}selected{% endif %}>İyi</option>
                 <option value="used" {% if filter_condition == "used" %}selected{% endif %}>Yıpranmış</option>
             </select>
         </div>
-        <div class="col-6 col-md-2">
+        <div class="field">
             <label for="id_min">Min ₺</label>
-            <input type="number" step="0.01" name="min_price" id="id_min" class="form-control" value="{{ filter_min_price }}">
+            <input type="number" step="0.01" name="min_price" id="id_min" value="{{ filter_min_price }}">
         </div>
-        <div class="col-6 col-md-2">
+        <div class="field">
             <label for="id_max">Max ₺</label>
-            <input type="number" step="0.01" name="max_price" id="id_max" class="form-control" value="{{ filter_max_price }}">
+            <input type="number" step="0.01" name="max_price" id="id_max" value="{{ filter_max_price }}">
         </div>
-        <div class="col-md-2">
-            <button type="submit" class="btn btn-primary w-100">Filtrele</button>
-        </div>
+        <button type="submit" class="btn btn-solid">Filtrele</button>
+    </form>
+
+    {% if books %}
+    <div class="book-grid">
+        {% for book in books %}
+            {% include 'books/_book_card.html' with book=book %}
+        {% endfor %}
     </div>
-</form>
+    {% else %}
+    <div class="empty">
+        <div class="emoji">🔎</div>
+        <h3>Sonuç bulunamadı</h3>
+        <p>Aradığın kriterlere uyan kitap yok.</p>
+        <a href="{% url 'book_list' %}" class="btn" style="margin-top:1rem;">Filtreleri sıfırla</a>
+    </div>
+    {% endif %}
 
-{% if books %}
-<div class="book-grid">
-    {% for book in books %}
-        {% include 'books/_book_card.html' with book=book %}
-    {% endfor %}
-</div>
-{% else %}
-<div class="empty-state">
-    <div class="emoji">🔍</div>
-    <h3>Sonuç bulunamadı</h3>
-    <p>Aradığın kriterlere uyan kitap yok. Filtreleri sıfırlamayı dene.</p>
-    <a href="{% url 'book_list' %}" class="btn btn-outline-primary mt-2">Tüm kitapları gör</a>
-</div>
-{% endif %}
-
-{% if page_obj.has_other_pages %}
-<nav aria-label="Sayfalama" class="mt-4">
-    <ul class="pagination flex-wrap justify-content-center">
+    {% if page_obj.has_other_pages %}
+    <nav class="pager" aria-label="Sayfalama">
         {% if page_obj.has_previous %}
-            <li class="page-item">
-                <a class="page-link" href="?page={{ page_obj.previous_page_number }}{{ querystring }}">← Önceki</a>
-            </li>
+            <a class="page-link" href="?page={{ page_obj.previous_page_number }}{{ querystring }}">← Önceki</a>
         {% endif %}
-        <li class="page-item disabled">
-            <span class="page-link">{{ page_obj.number }} / {{ page_obj.paginator.num_pages }}</span>
-        </li>
+        <span class="current">{{ page_obj.number }} / {{ page_obj.paginator.num_pages }}</span>
         {% if page_obj.has_next %}
-            <li class="page-item">
-                <a class="page-link" href="?page={{ page_obj.next_page_number }}{{ querystring }}">Sonraki →</a>
-            </li>
+            <a class="page-link" href="?page={{ page_obj.next_page_number }}{{ querystring }}">Sonraki →</a>
         {% endif %}
-    </ul>
-</nav>
+    </nav>
+    {% endif %}
+</section>
 {% endif %}
 {% endblock %}
