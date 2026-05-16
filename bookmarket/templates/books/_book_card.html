@@ -1,0 +1,38 @@
+{% load static %}
+<article class="book-card {% if book.is_sold %}is-sold{% endif %}">
+    <div class="book-card-badges">
+        {% if book.is_sold %}
+            <span class="badge-tag sold">Satıldı</span>
+        {% elif book.is_new %}
+            <span class="badge-tag new">Yeni eklendi</span>
+        {% endif %}
+        <span class="badge-tag cond-{{ book.condition }}">
+            {% if book.condition == 'new' %}Yeni gibi{% elif book.condition == 'good' %}İyi{% else %}Yıpranmış{% endif %}
+        </span>
+    </div>
+
+    {% if user.is_authenticated %}
+        <button type="button"
+                class="btn-favorite {% if book.pk in user_favorite_ids %}is-favorited{% endif %}"
+                data-toggle-url="{% url 'favorite_toggle' book.pk %}"
+                data-login-url="{% url 'login' %}"
+                aria-label="Favoriye ekle">
+            <span class="heart">{% if book.pk in user_favorite_ids %}♥{% else %}♡{% endif %}</span>
+        </button>
+    {% endif %}
+
+    <a href="{% url 'book_detail' book.pk %}" class="book-card-link">
+        <div class="book-card-cover">
+            {% if book.image %}
+                <img src="{{ book.image.url }}" alt="{{ book.title }} — {{ book.author }}" loading="lazy">
+            {% else %}
+                <div class="empty-cover">📖<br>{{ book.title }}</div>
+            {% endif %}
+        </div>
+        <div class="book-card-body">
+            <h3 class="book-card-title">{{ book.title }}</h3>
+            <div class="book-card-author">{{ book.author }}</div>
+            <div class="book-card-price">{{ book.price|floatformat:0 }}<span class="currency"> ₺</span></div>
+        </div>
+    </a>
+</article>

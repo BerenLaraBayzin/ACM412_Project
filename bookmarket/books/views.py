@@ -1,17 +1,26 @@
 from collections import OrderedDict
+from datetime import timedelta
 
 from django.contrib import messages
 from django.contrib.auth import get_user_model
 from django.contrib.auth.decorators import login_required
 from django.core.paginator import Paginator
 from django.db import transaction
-from django.db.models import Q
+from django.db.models import Count, Q
 from django.http import HttpResponseForbidden, JsonResponse
 from django.shortcuts import get_object_or_404, redirect, render
+from django.utils import timezone
 from django.views.decorators.http import require_POST
 
 from .forms import BookForm, MessageForm, OrderPurchaseForm
 from .models import Book, Category, Message, Order
+
+
+def _mark_new_flag(books):
+    cutoff = timezone.now() - timedelta(days=7)
+    for b in books:
+        b.is_new = b.created_at >= cutoff
+    return books
 
 
 def _filter_querystring(request, exclude=('page',)):
@@ -55,20 +64,42 @@ def book_list(request):
     except (TypeError, ValueError):
         pass
 
-    paginator = Paginator(qs, 9)
+    paginator = Paginator(qs, 12)
     page_obj = paginator.get_page(request.GET.get('page'))
+    _mark_new_flag(page_obj.object_list)
+
+    has_filters = any([q, category_id, condition, request.GET.get('min_price'),
+                       request.GET.get('max_price')])
+    featured_books = []
+    if not has_filters and page_obj.number == 1:
+        featured_books = list(
+            Book.objects.filter(is_sold=False)
+            .select_related('category', 'seller')
+            .annotate(fav_count=Count('favorited_by'))
+            .filter(fav_count__gt=0)
+            .order_by('-fav_count', '-created_at')[:4]
+        )
+        _mark_new_flag(featured_books)
 
     user_favorite_ids = set()
     if request.user.is_authenticated:
-        user_favorite_ids = set(
-            request.user.favorite_books.filter(
-                pk__in=[b.pk for b in page_obj]
-            ).values_list('pk', flat=True)
-        )
+        candidate_pks = [b.pk for b in page_obj] + [b.pk for b in featured_books]
+        if candidate_pks:
+            user_favorite_ids = set(
+                request.user.favorite_books.filter(pk__in=candidate_pks)
+                .values_list('pk', flat=True)
+            )
+
+    total_count = Book.objects.filter(is_sold=False).count()
+    seller_count = (
+        Book.objects.filter(is_sold=False)
+        .values('seller_id').distinct().count()
+    )
 
     context = {
         'page_obj': page_obj,
         'books': page_obj,
+        'featured_books': featured_books,
         'categories': Category.objects.all().order_by('name'),
         'filter_q': q,
         'filter_category': category_id or '',
@@ -77,6 +108,8 @@ def book_list(request):
         'filter_max_price': request.GET.get('max_price', ''),
         'querystring': _filter_querystring(request),
         'user_favorite_ids': user_favorite_ids,
+        'total_count': total_count,
+        'seller_count': seller_count,
     }
     return render(request, 'books/book_list.html', context)
 
@@ -136,12 +169,16 @@ def favorite_toggle(request, pk):
 
 @login_required
 def favorites_list(request):
-    qs = (
+    qs = list(
         request.user.favorite_books
         .select_related('category', 'seller')
         .order_by('-created_at')
     )
-    return render(request, 'books/favorites_list.html', {'books': qs})
+    _mark_new_flag(qs)
+    return render(request, 'books/favorites_list.html', {
+        'books': qs,
+        'user_favorite_ids': {b.pk for b in qs},
+    })
 
 
 @login_required

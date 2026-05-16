@@ -3,86 +3,93 @@
 {% block title %}Kitaplar — BookMarket{% endblock %}
 
 {% block content %}
-<section class="hero-banner">
-    <h1>İkinci el kitaplara yeni bir hayat</h1>
-    <p>Filtrele, beğen, satıcıyla yaz, güvenle satın al.</p>
+<section class="hero">
+    <span class="eyebrow">İkinci el kitap pazarı</span>
+    <h1>Sevdiğin kitabı bul, hazinendeki kitabı paylaş.</h1>
+    <p class="lead">Üniversite kitapları, romanlar, klasikler — uygun fiyatlarla, doğrudan satıcısından.</p>
+    <form class="hero-search" method="get" action="{% url 'book_list' %}">
+        <input type="search" name="q" placeholder="Kitap adı veya yazar ara..." value="{{ filter_q }}">
+        <button type="submit">Ara</button>
+    </form>
+    <div class="hero-stats">
+        <div><strong>{{ total_count }}</strong>kitap satılıyor</div>
+        <div><strong>{{ seller_count }}</strong>aktif satıcı</div>
+        <div><strong>{{ categories|length }}</strong>kategori</div>
+    </div>
 </section>
 
-<form method="get" class="row g-2 align-items-end mb-4 p-3 rounded border bg-light">
-    <div class="col-md-3">
-        <label class="form-label small mb-0" for="id_q">Arama</label>
-        <input type="search" name="q" id="id_q" class="form-control" placeholder="Başlık veya yazar" value="{{ filter_q }}">
+{% if featured_books %}
+<div class="section-head">
+    <div>
+        <h2>Öne çıkanlar</h2>
+        <div class="subtitle">En çok favorilenen kitaplar</div>
     </div>
-    <div class="col-md-2">
-        <label class="form-label small mb-0" for="id_category">Kategori</label>
-        <select name="category" id="id_category" class="form-select">
-            <option value="">Tümü</option>
-            {% for c in categories %}
-                <option value="{{ c.pk }}" {% if filter_category == c.pk|stringformat:"s" %}selected{% endif %}>{{ c.name }}</option>
-            {% endfor %}
-        </select>
+</div>
+<div class="book-grid mb-4">
+    {% for book in featured_books %}
+        {% include 'books/_book_card.html' with book=book %}
+    {% endfor %}
+</div>
+{% endif %}
+
+<div class="section-head">
+    <div>
+        <h2>Tüm kitaplar</h2>
+        <div class="subtitle">{{ page_obj.paginator.count }} sonuç</div>
     </div>
-    <div class="col-md-2">
-        <label class="form-label small mb-0" for="id_condition">Durum</label>
-        <select name="condition" id="id_condition" class="form-select">
-            <option value="">Tümü</option>
-            <option value="new" {% if filter_condition == "new" %}selected{% endif %}>Yeni gibi</option>
-            <option value="good" {% if filter_condition == "good" %}selected{% endif %}>İyi</option>
-            <option value="used" {% if filter_condition == "used" %}selected{% endif %}>Yıpranmış</option>
-        </select>
-    </div>
-    <div class="col-md-2">
-        <label class="form-label small mb-0" for="id_min">Min TL</label>
-        <input type="number" step="0.01" name="min_price" id="id_min" class="form-control" value="{{ filter_min_price }}">
-    </div>
-    <div class="col-md-2">
-        <label class="form-label small mb-0" for="id_max">Max TL</label>
-        <input type="number" step="0.01" name="max_price" id="id_max" class="form-control" value="{{ filter_max_price }}">
-    </div>
-    <div class="col-md-1">
-        <button type="submit" class="btn btn-primary w-100">Filtrele</button>
+</div>
+
+<div class="cat-chips">
+    <a class="cat-chip {% if not filter_category %}is-active{% endif %}" href="{% url 'book_list' %}">Tümü</a>
+    {% for c in categories %}
+        <a class="cat-chip {% if filter_category == c.pk|stringformat:'s' %}is-active{% endif %}" href="?category={{ c.pk }}">{{ c.name }}</a>
+    {% endfor %}
+</div>
+
+<form method="get" class="filter-panel">
+    {% if filter_category %}<input type="hidden" name="category" value="{{ filter_category }}">{% endif %}
+    <div class="row g-3 align-items-end">
+        <div class="col-md-4">
+            <label for="id_q">Arama</label>
+            <input type="search" name="q" id="id_q" class="form-control" placeholder="Başlık veya yazar" value="{{ filter_q }}">
+        </div>
+        <div class="col-md-2">
+            <label for="id_condition">Durum</label>
+            <select name="condition" id="id_condition" class="form-select">
+                <option value="">Tümü</option>
+                <option value="new" {% if filter_condition == "new" %}selected{% endif %}>Yeni gibi</option>
+                <option value="good" {% if filter_condition == "good" %}selected{% endif %}>İyi</option>
+                <option value="used" {% if filter_condition == "used" %}selected{% endif %}>Yıpranmış</option>
+            </select>
+        </div>
+        <div class="col-6 col-md-2">
+            <label for="id_min">Min ₺</label>
+            <input type="number" step="0.01" name="min_price" id="id_min" class="form-control" value="{{ filter_min_price }}">
+        </div>
+        <div class="col-6 col-md-2">
+            <label for="id_max">Max ₺</label>
+            <input type="number" step="0.01" name="max_price" id="id_max" class="form-control" value="{{ filter_max_price }}">
+        </div>
+        <div class="col-md-2">
+            <button type="submit" class="btn btn-primary w-100">Filtrele</button>
+        </div>
     </div>
 </form>
 
-<div class="row g-4">
+{% if books %}
+<div class="book-grid">
     {% for book in books %}
-    <div class="col-md-6 col-lg-4">
-        <div class="card h-100">
-            <div class="card-img-wrap">
-                {% if book.image %}
-                    <img src="{{ book.image.url }}" class="card-img-top" alt="{{ book.title }}" style="height: 220px; object-fit: cover;">
-                {% else %}
-                    <div class="card-img-top d-flex align-items-center justify-content-center text-muted" style="height: 220px; background: var(--bm-surface-alt);">Görsel yok</div>
-                {% endif %}
-                {% if user.is_authenticated %}
-                <button type="button"
-                        class="btn-favorite {% if book.pk in user_favorite_ids %}is-favorited{% endif %}"
-                        data-toggle-url="{% url 'favorite_toggle' book.pk %}"
-                        data-login-url="{% url 'login' %}"
-                        aria-label="Favoriye ekle">
-                    <span class="heart">{% if book.pk in user_favorite_ids %}♥{% else %}♡{% endif %}</span>
-                </button>
-                {% endif %}
-            </div>
-            <div class="card-body d-flex flex-column">
-                <h5 class="card-title mb-1">{{ book.title }}</h5>
-                <p class="card-text text-muted mb-2">{{ book.author }}</p>
-                {% if book.category %}
-                    <p class="small mb-2"><span class="badge bg-secondary">{{ book.category.name }}</span></p>
-                {% endif %}
-                <div class="d-flex justify-content-between align-items-center mt-auto">
-                    <span class="book-card-price">{{ book.price }} TL</span>
-                    <a href="{% url 'book_detail' book.pk %}" class="btn btn-primary btn-sm">Detay →</a>
-                </div>
-            </div>
-        </div>
-    </div>
-    {% empty %}
-        <div class="col-12">
-            <div class="p-5 text-center text-muted bg-light rounded">Aradığınız kriterlere uygun ilan yok.</div>
-        </div>
+        {% include 'books/_book_card.html' with book=book %}
     {% endfor %}
 </div>
+{% else %}
+<div class="empty-state">
+    <div class="emoji">🔍</div>
+    <h3>Sonuç bulunamadı</h3>
+    <p>Aradığın kriterlere uyan kitap yok. Filtreleri sıfırlamayı dene.</p>
+    <a href="{% url 'book_list' %}" class="btn btn-outline-primary mt-2">Tüm kitapları gör</a>
+</div>
+{% endif %}
 
 {% if page_obj.has_other_pages %}
 <nav aria-label="Sayfalama" class="mt-4">
