@@ -2,6 +2,24 @@
 
 ACM412 Web Programming dönem projesi. Django 4.2 + DRF + Bootstrap 5 ile geliştirilmiş, kullanıcıların ikinci el kitap ilanı verip alıp satabildiği, mesajlaşabildiği ve favorilerini yönetebildiği tam donanımlı bir pazaryeri uygulaması.
 
+## 🌐 Canlı Demo
+
+**URL:** <https://bookmarket-2jdy.onrender.com> (Render free tier — ilk istek 30-50 sn uyku açabilir)
+
+### Örnek hesaplar
+
+| Tip | Kullanıcı | Şifre | Notlar |
+|---|---|---|---|
+| **Süper kullanıcı (admin paneli)** | `admin` | `BookMarket2026!` | `/admin/` için |
+| Demo satıcı 1 | `demo_ali` | `demo1234` | İlanları + favorileri var |
+| Demo satıcı 2 | `demo_ayse` | `demo1234` | — |
+| Demo satıcı 3 | `demo_can` | `demo1234` | — |
+| Demo satıcı 4 | `demo_defne` | `demo1234` | — |
+| Demo satıcı 5 | `demo_emre` | `demo1234` | — |
+| Demo satıcı 6 | `demo_zeynep` | `demo1234` | — |
+
+> ⚠ Bu kimlikler demo amaçlıdır ve repo'da public olarak görünür — gerçek dağıtımda Render dashboard'dan `DJANGO_SUPERUSER_PASSWORD` env değişkenini rotasyona alın.
+
 ## Hızlı Başlangıç
 
 ```bash
