@@ -9,8 +9,10 @@ pip install -r requirements.txt
 python manage.py collectstatic --noinput
 python manage.py migrate --noinput
 
-# Demo data — idempotent (--keep skips wipe, get_or_create on users/books)
-python manage.py rich_seed --keep || echo "rich_seed step skipped/failed"
+# Demo data — re-seed on every deploy because Render free tier has
+# ephemeral disk: uploaded cover images get wiped between deploys, so
+# we re-download them along with the demo data.
+python manage.py rich_seed || echo "rich_seed step skipped/failed"
 
 # Bootstrap superuser from env vars if they exist and account is missing
 if [ -n "$DJANGO_SUPERUSER_USERNAME" ] && [ -n "$DJANGO_SUPERUSER_PASSWORD" ]; then
