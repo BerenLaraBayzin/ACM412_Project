@@ -1,0 +1,7 @@
+# Normalize line endings to avoid CRLF breaking shell scripts on Linux.
+# Shell scripts MUST be LF — a CRLF shebang (`#!/usr/bin/env bash\r`) makes
+# the kernel look for an interpreter literally named "bash\r" and the deploy fails.
+*.sh text eol=lf
+
+# Let Git normalize text files to LF in the repo; check out native on Windows.
+* text=auto
