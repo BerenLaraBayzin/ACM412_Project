@@ -10,10 +10,15 @@ Open Library Covers API kullanılır: https://covers.openlibrary.org/
 ISBN bilinen kitaplar için public domain kapak görselleri çekilir.
 """
 
+import json
+import os
 import random
+import textwrap
 import urllib.request
 from decimal import Decimal
 from io import BytesIO
+
+from PIL import Image, ImageDraw, ImageFont
 
 from django.contrib.auth.models import User
 from django.core.files.base import ContentFile
@@ -141,31 +146,100 @@ DEMO_USERS = [
 DEMO_PASSWORD = "demo1234"
 
 
-def _download_cover(isbn):
-    """Open Library'den ISBN ile kapak çek. Yoksa None döner."""
-    if not isbn:
-        return None
-    url = f"https://covers.openlibrary.org/b/isbn/{isbn}-L.jpg?default=false"
+def _fetch(url, timeout=8):
+    """URL'i indir, hata olursa None döner."""
     try:
         req = urllib.request.Request(
             url, headers={"User-Agent": "BookMarket Seeder/1.0"}
         )
-        with urllib.request.urlopen(req, timeout=8) as resp:
-            data = resp.read()
-            # Open Library boş kapakta küçük yer tutucu döndürür; çok küçükse atla
-            if len(data) < 500:
-                return None
-            return data
+        with urllib.request.urlopen(req, timeout=timeout) as resp:
+            return resp.read()
     except Exception:
         return None
 
 
-# Görseli olmayan kitaplar için 1x1 GIF (model image alanı zorunlu)
-TINY_GIF = (
-    b"GIF89a\x01\x00\x01\x00\x80\x00\x00\x00\x00\x00\x00\x00\x00!"
-    b"\xf9\x04\x01\x00\x00\x00\x00,\x00\x00\x00\x00\x01\x00\x01\x00\x00\x02"
-    b"\x02D\x01\x00;"
-)
+def _download_cover(isbn):
+    """ISBN ile birden çok kaynaktan kapak çek. Bulunamazsa None döner."""
+    if not isbn:
+        return None
+
+    # 1) Open Library Covers — önce büyük (L), sonra orta (M) boyut.
+    #    `default=false` boş kapakta 404 verir; yine de küçük dosyaları eleriz.
+    for size in ("L", "M"):
+        url = f"https://covers.openlibrary.org/b/isbn/{isbn}-{size}.jpg?default=false"
+        data = _fetch(url)
+        if data and len(data) >= 500:
+            return data
+
+    # 2) Google Books — ISBN ile arayıp thumbnail görselini çek.
+    payload = _fetch(f"https://www.googleapis.com/books/v1/volumes?q=isbn:{isbn}")
+    if payload:
+        try:
+            items = json.loads(payload).get("items") or []
+            if items:
+                links = items[0].get("volumeInfo", {}).get("imageLinks", {})
+                thumb = links.get("thumbnail") or links.get("smallThumbnail")
+                if thumb:
+                    img = _fetch(thumb.replace("http://", "https://"))
+                    if img and len(img) >= 500:
+                        return img
+        except Exception:
+            pass
+
+    return None
+
+
+# Üretilen placeholder kapaklar için arka plan paleti.
+PLACEHOLDER_COLORS = [
+    (38, 70, 83), (42, 157, 143), (138, 177, 125), (231, 111, 81),
+    (244, 162, 97), (61, 90, 128), (90, 61, 128), (128, 61, 90),
+]
+
+
+# Depoya gömülü DejaVu fontu — Türkçe karakterleri (ğ, ş, İ, ı...) her
+# ortamda (macOS/Linux) doğru çizer; sistem fontuna güvenmeyiz.
+# rich_seed.py -> books/management/commands/ ; fontlar books/fonts/ altında.
+FONT_DIR = os.path.join(os.path.dirname(__file__), "..", "..", "fonts")
+
+
+def _load_font(size, bold=False):
+    name = "DejaVuSans-Bold.ttf" if bold else "DejaVuSans.ttf"
+    try:
+        return ImageFont.truetype(os.path.join(FONT_DIR, name), size)
+    except Exception:
+        try:
+            return ImageFont.load_default(size=size)  # Pillow 10.1+
+        except TypeError:
+            return ImageFont.load_default()
+
+
+def _placeholder_cover(title, author):
+    """Kapağı bulunamayan kitaplar için başlık+yazar yazan görsel üret."""
+    w, h = 400, 600
+    bg = PLACEHOLDER_COLORS[sum(map(ord, title)) % len(PLACEHOLDER_COLORS)]
+    img = Image.new("RGB", (w, h), bg)
+    draw = ImageDraw.Draw(img)
+    draw.rectangle([0, 0, w, 90], fill=tuple(max(0, c - 25) for c in bg))
+
+    title_font = _load_font(34, bold=True)
+    author_font = _load_font(22)
+
+    y = 170
+    for line in textwrap.wrap(title, width=16)[:5]:
+        tw = draw.textlength(line, font=title_font)
+        draw.text(((w - tw) / 2, y), line, font=title_font, fill=(255, 255, 255))
+        y += 46
+
+    aw = draw.textlength(author, font=author_font)
+    draw.text(((w - aw) / 2, y + 20), author, font=author_font, fill=(235, 235, 235))
+
+    label = "Kapak görseli yok"
+    lw = draw.textlength(label, font=author_font)
+    draw.text(((w - lw) / 2, h - 60), label, font=author_font, fill=(255, 255, 255))
+
+    buf = BytesIO()
+    img.save(buf, format="PNG")
+    return buf.getvalue()
 
 
 class Command(BaseCommand):
@@ -241,10 +315,14 @@ class Command(BaseCommand):
                     cover = None
                 if cover:
                     cover_hits += 1
-                    book.image.save(f"{isbn}.jpg", ContentFile(cover), save=False)
+                    book.image.save(f"{isbn or i}.jpg", ContentFile(cover), save=False)
                 else:
                     cover_misses += 1
-                    book.image.save(f"placeholder_{i}.gif", ContentFile(TINY_GIF), save=False)
+                    book.image.save(
+                        f"placeholder_{i}.png",
+                        ContentFile(_placeholder_cover(title, author)),
+                        save=False,
+                    )
                 book.save()
                 created_books.append(book)
 
