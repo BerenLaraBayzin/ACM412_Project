@@ -1,6 +1,6 @@
 # BookMarket — İkinci El Kitap Pazarı
 
-ACM412 Web Programming dönem projesi. Django 4.2 + DRF + Bootstrap 5 ile geliştirilmiş, kullanıcıların ikinci el kitap ilanı verip alıp satabildiği, mesajlaşabildiği ve favorilerini yönetebildiği tam donanımlı bir pazaryeri uygulaması.
+ACM412 Web Programming dönem projesi. Django 4.2 + DRF + özel CSS tasarım sistemi ile geliştirilmiş, kullanıcıların ikinci el kitap ilanı verip alıp satabildiği, mesajlaşabildiği ve favorilerini yönetebildiği tam donanımlı bir pazaryeri uygulaması.
 
 ## 🌐 Canlı Demo
 
@@ -22,14 +22,20 @@ ACM412 Web Programming dönem projesi. Django 4.2 + DRF + Bootstrap 5 ile geliş
 
 ## Hızlı Başlangıç
 
+> ⚠ **Python sürümü: 3.10 – 3.12 kullanın.** Django 4.2, Python 3.13/3.14 ile **uyumlu değildir** — kurulum tamamlansa bile sayfalar şablon hatası (500) verir. Sürümü kontrol et: `python3.12 --version`. Yoksa: macOS `brew install python@3.12`, Windows için <https://www.python.org/downloads/> üzerinden 3.12 kur.
+
 ```bash
 cd bookmarket
-python3 -m venv .venv
+
+# Sanal ortam — Python sürümünü açıkça belirt (kurulum birkaç sn sürer, kesme)
+python3.12 -m venv .venv             # Windows: py -3.12 -m venv .venv
 source .venv/bin/activate            # Windows: .venv\Scripts\activate
+python --version                     # 3.12.x görmelisin
+
 pip install -r requirements.txt
 python manage.py migrate
 python manage.py createsuperuser     # opsiyonel — admin paneli için
-python manage.py seed_simulation     # opsiyonel — demo veri
+python manage.py rich_seed           # demo veri + Open Library'den gerçek kapaklar (internet ister)
 python manage.py runserver
 ```
 
@@ -37,7 +43,9 @@ python manage.py runserver
 - Admin paneli: <http://127.0.0.1:8000/admin/>
 - REST API: <http://127.0.0.1:8000/api/books/>
 
-Demo kullanıcılar (seed sonrası): `demo_ali`, `demo_ayse`, `demo_can`, `demo_defne` — şifre `demo1234`.
+> İnternet yoksa veya kapak indirmek istemiyorsan: `python manage.py rich_seed --no-covers` (görseller yer tutucu olur). Sadece hafif senaryo testi için `seed_simulation` da var ama o yalnızca placeholder görsel ekler.
+
+Demo kullanıcılar (seed sonrası): `demo_ali`, `demo_ayse`, `demo_can`, `demo_defne`, `demo_emre`, `demo_zeynep` — şifre `demo1234`.
 
 ## Özellikler
 
@@ -52,7 +60,7 @@ Demo kullanıcılar (seed sonrası): `demo_ali`, `demo_ayse`, `demo_can`, `demo_
 1. **Authentication** — Django built-in auth + özelleştirilmiş `UserRegisterForm`
 2. **Authorization** — ilan sahibi/alıcı/satıcı bazlı görünürlük ve eylem kontrolü
 3. **Search & Filter** — başlık/yazar araması + kategori + durum + fiyat aralığı
-4. **Pagination** — kitap listesinde 9'arlı sayfalama
+4. **Pagination** — filtre/arama sonuçlarında 12'şerli sayfalama
 5. **REST API (DRF)** — `/api/books/`, `/api/categories/`, custom `favorite` action
 6. **AJAX** — favori toggle (kalp butonu), mesaj iş parçacığında canlı gönderme
 7. **Favoriler (M2M)** — kullanıcı–kitap ManyToMany ilişkisi, favori listesi
@@ -60,7 +68,7 @@ Demo kullanıcılar (seed sonrası): `demo_ali`, `demo_ayse`, `demo_can`, `demo_
 ### UX
 - **Dark mode** — sistem tercihini algılar, localStorage ile kalıcı, tek tıkla geçiş
 - **Animasyonlar** — kart hover, kalp animasyonu, mesaj balon geçişi
-- **Responsive** — Bootstrap 5 grid + mobil navbar; 320 px'e kadar test edildi
+- **Responsive** — özel CSS grid + mobil navbar; 320 px'e kadar test edildi
 - **Hero banner** — anasayfada CSS gradient ile öne çıkan başlık
 
 ## Mimari ve Modeller
@@ -126,7 +134,7 @@ Browsable API: <http://127.0.0.1:8000/api/books/> (Django session auth).
 python manage.py test books
 ```
 
-18 test geçer (book CRUD, izin, satın alma, fiyat filtresi, favoriler, AJAX mesaj, REST API, kullanıcı kaydı).
+23 test geçer (book CRUD, izin, satın alma, fiyat filtresi, favoriler, AJAX mesaj, REST API, ISBN lookup, hata sayfaları, kullanıcı kaydı).
 
 ```bash
 python manage.py seed_simulation

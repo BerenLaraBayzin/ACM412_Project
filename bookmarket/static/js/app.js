@@ -60,7 +60,7 @@
   }
 
   document.addEventListener('click', async function (e) {
-    const btn = e.target.closest('.btn-favorite[data-toggle-url]');
+    const btn = e.target.closest('.fav-btn[data-toggle-url], .fav-detail[data-toggle-url]');
     if (!btn) return;
     e.preventDefault();
     if (btn.dataset.busy === '1') return;
@@ -80,7 +80,7 @@
       }
       if (!res.ok) throw new Error('favorite toggle failed');
       const data = await res.json();
-      btn.classList.toggle('is-favorited', data.favorited);
+      btn.classList.toggle('is-on', data.favorited);
       const countEl = btn.querySelector('.count');
       if (countEl) countEl.textContent = data.favorite_count;
       const heart = btn.querySelector('.heart');
