@@ -130,6 +130,198 @@ BOOKS = [
      "Az notlu. Akıcı bir kitap."),
     ("Mindset", "Carol Dweck", "9780345472328", "kisisel-gelisim", "100.00", "good",
      "Türkçe çevirisi. İlk yarıda not var."),
+
+    # --- Roman (ek) ---
+    ("Sefiller", "Victor Hugo", "9780451419439", "roman", "175.00", "good",
+     "İki cilt tek kitapta. Sırt sağlam, sayfalar temiz."),
+    ("Don Kişot", "Miguel de Cervantes", "9780142437230", "roman", "160.00", "good",
+     "Penguin Classics. Kapakta hafif yıpranma."),
+    ("Savaş ve Barış", "Lev Tolstoy", "9781400079988", "roman", "220.00", "used",
+     "Kalın cilt, çok okunmuş. Birkaç sayfa katlı."),
+    ("Madame Bovary", "Gustave Flaubert", "9780140449129", "roman", "90.00", "good",
+     "Penguin baskı. Az altı çizili."),
+    ("Yeraltından Notlar", "Fyodor Dostoyevski", "9780679734529", "roman", "70.00", "good",
+     "İnce kitap, tertemiz sayfalar."),
+    ("Dönüşüm", "Franz Kafka", "9780553213690", "roman", "55.00", "new",
+     "Cep baskı, hiç açılmamış gibi."),
+    ("Dava", "Franz Kafka", "9780805209990", "roman", "85.00", "good",
+     "İyi durumda, ön kapakta küçük kıvrım."),
+    ("Yabancı", "Albert Camus", "9780679720201", "roman", "75.00", "new",
+     "Vintage baskı, çok temiz."),
+    ("Veba", "Albert Camus", "9780679720218", "roman", "95.00", "good",
+     "Az notlu, akıcı çeviri."),
+    ("Simyacı", "Paulo Coelho", "9780062315007", "roman", "80.00", "new",
+     "HarperOne baskı, hediye gibi."),
+    ("Gurur ve Önyargı", "Jane Austen", "9780141439518", "roman", "85.00", "good",
+     "Penguin Classics. Kapak köşeleri hafif yıpranmış."),
+    ("Jane Eyre", "Charlotte Brontë", "9780142437209", "roman", "95.00", "good",
+     "Kalın cilt, sayfalar sararmaya başlamış."),
+    ("Uğultulu Tepeler", "Emily Brontë", "9780141439556", "roman", "85.00", "good",
+     "Klasik baskı, iyi durumda."),
+    ("Frankenstein", "Mary Shelley", "9780141439471", "roman", "70.00", "new",
+     "Penguin Classics, neredeyse hiç okunmamış."),
+    ("Drakula", "Bram Stoker", "9780141439846", "roman", "90.00", "good",
+     "Gotik klasik. Sayfa ayracı dahil."),
+    ("Moby Dick", "Herman Melville", "9780142437247", "roman", "140.00", "used",
+     "Büyük boy, sırt biraz açık. İçerik tam."),
+    ("Çavdar Tarlasında Çocuklar", "J.D. Salinger", "9780316769488", "roman", "100.00", "good",
+     "Klasik baskı. Az yıpranmış."),
+    ("Cesur Yeni Dünya", "Aldous Huxley", "9780060850524", "roman", "95.00", "new",
+     "Modern baskı, tertemiz."),
+    ("Fahrenheit 451", "Ray Bradbury", "9781451673319", "roman", "85.00", "good",
+     "Az altı çizili, akıcı."),
+    ("Yaşlı Adam ve Deniz", "Ernest Hemingway", "9780684801223", "roman", "65.00", "new",
+     "İnce kitap, kullanılmamış gibi."),
+    ("Fareler ve İnsanlar", "John Steinbeck", "9780140177398", "roman", "60.00", "good",
+     "Cep baskı. Birkaç sayfa kıvrık."),
+    ("Gazap Üzümleri", "John Steinbeck", "9780143039433", "roman", "130.00", "good",
+     "Penguin baskı, kalın. İyi durumda."),
+    ("Genç Werther'in Acıları", "J.W. von Goethe", "9780140445039", "roman", "70.00", "good",
+     "Klasik, az notlu."),
+    ("İnce Memed", "Yaşar Kemal", "9789750806742", "roman", "120.00", "good",
+     "YKY baskı. Sevdiğim bölümlerde sayfa katlı."),
+    ("Saatleri Ayarlama Enstitüsü", "Ahmet Hamdi Tanpınar", "9789753638029", "roman", "110.00", "good",
+     "Dergah Yayınları. Sırt sağlam."),
+    ("Huzur", "Ahmet Hamdi Tanpınar", "9789753638005", "roman", "105.00", "good",
+     "Dergah Yayınları, iyi durumda."),
+    ("Aşk", "Elif Şafak", "9789752117761", "roman", "95.00", "new",
+     "Doğan Kitap, çok yeni."),
+
+    # --- Felsefe (ek) ---
+    ("Düşünceler", "Marcus Aurelius", "9780140449334", "felsefe", "75.00", "good",
+     "Stoacılığın temel metni. Penguin Classics."),
+    ("Bir Stoacıdan Mektuplar", "Seneca", "9780140442106", "felsefe", "85.00", "good",
+     "Az altı çizili, akıcı çeviri."),
+    ("İyinin ve Kötünün Ötesinde", "Friedrich Nietzsche", "9780140449235", "felsefe", "90.00", "good",
+     "Penguin Classics. Birkaç not var."),
+    ("Ahlakın Soykütüğü", "Friedrich Nietzsche", "9780679724629", "felsefe", "85.00", "good",
+     "Vintage baskı, iyi durumda."),
+    ("Şölen", "Platon", "9780140449273", "felsefe", "70.00", "new",
+     "İnce kitap, tertemiz."),
+    ("Sokrates'in Son Günleri", "Platon", "9780140449280", "felsefe", "80.00", "good",
+     "Penguin Classics. Az yıpranmış."),
+    ("Nikomakhos'a Etik", "Aristoteles", "9780140449495", "felsefe", "110.00", "good",
+     "Akademik baskı, dipnotlu."),
+    ("Korku ve Titreme", "Søren Kierkegaard", "9780140444490", "felsefe", "85.00", "good",
+     "Az notlu. Yoğun bir metin."),
+    ("Bulantı", "Jean-Paul Sartre", "9780811220309", "felsefe", "80.00", "good",
+     "New Directions baskı, iyi durumda."),
+    ("Batı Felsefesi Tarihi", "Bertrand Russell", "9780671201586", "felsefe", "190.00", "used",
+     "Kalın referans kitabı. Sırt açık ama tam."),
+
+    # --- Bilim & Teknoloji (ek) ---
+    ("Kozmos", "Carl Sagan", "9780345539434", "bilim-teknoloji", "150.00", "new",
+     "Renkli baskı, çok temiz."),
+    ("Soluk Mavi Nokta", "Carl Sagan", "9780345376596", "bilim-teknoloji", "120.00", "good",
+     "Az altı çizili, akıcı."),
+    ("Zarif Evren", "Brian Greene", "9780393338102", "bilim-teknoloji", "140.00", "good",
+     "Sicim teorisine giriş. İyi durumda."),
+    ("Gödel, Escher, Bach", "Douglas Hofstadter", "9780465026562", "bilim-teknoloji", "260.00", "used",
+     "Kült kitap, kalın. Çok okunmuş, notlu."),
+    ("Tüfek, Mikrop ve Çelik", "Jared Diamond", "9780393354324", "bilim-teknoloji", "160.00", "good",
+     "Pulitzer ödüllü. Az notlu."),
+    ("Homo Deus", "Yuval Noah Harari", "9780062464316", "bilim-teknoloji", "150.00", "new",
+     "Kolektif Kitap. Tertemiz."),
+    ("Büyük Sorulara Kısa Yanıtlar", "Stephen Hawking", "9781984819192", "bilim-teknoloji", "120.00", "new",
+     "Son kitabı, hiç açılmamış gibi."),
+    ("Refactoring", "Martin Fowler", "9780134757599", "bilim-teknoloji", "420.00", "good",
+     "İkinci baskı. Yazılımcı klasiği, az notlu."),
+    ("Design Patterns", "Erich Gamma et al. (GoF)", "9780201633610", "bilim-teknoloji", "380.00", "used",
+     "Klasik GoF kitabı. Sırt yıpranmış."),
+    ("The Mythical Man-Month", "Frederick Brooks", "9780201835953", "bilim-teknoloji", "260.00", "good",
+     "Yazılım mühendisliği klasiği."),
+    ("Code Complete", "Steve McConnell", "9780735619678", "bilim-teknoloji", "400.00", "good",
+     "İkinci baskı. Kalın, iyi durumda."),
+    ("Cracking the Coding Interview", "Gayle Laakmann McDowell", "9780984782857", "bilim-teknoloji", "300.00", "good",
+     "Mülakat hazırlığı için. Az çözüm işaretli."),
+    ("Fluent Python", "Luciano Ramalho", "9781492056355", "bilim-teknoloji", "450.00", "new",
+     "İkinci baskı, tertemiz."),
+    ("Eloquent JavaScript", "Marijn Haverbeke", "9781593279509", "bilim-teknoloji", "240.00", "good",
+     "Üçüncü baskı. Az notlu."),
+    ("Hands-On Machine Learning", "Aurélien Géron", "9781492032649", "bilim-teknoloji", "520.00", "good",
+     "İkinci baskı. ML için referans."),
+
+    # --- Tarih (ek) ---
+    ("İpek Yolu: Dünyanın Yeni Tarihi", "Peter Frankopan", "9781101912379", "tarih", "170.00", "good",
+     "Kapsamlı dünya tarihi. İyi durumda."),
+    ("SPQR: Antik Roma Tarihi", "Mary Beard", "9781631492228", "tarih", "160.00", "new",
+     "Çok beğenilen Roma tarihi. Tertemiz."),
+    ("Ağustos Topları", "Barbara Tuchman", "9780345476098", "tarih", "140.00", "good",
+     "I. Dünya Savaşı'nın başlangıcı. Az notlu."),
+    ("Amerika'nın Halk Tarihi", "Howard Zinn", "9780062397348", "tarih", "150.00", "good",
+     "Alternatif bir tarih anlatısı."),
+
+    # --- Şiir (ek) ---
+    ("Çimen Yaprakları", "Walt Whitman", "9780140421996", "siir", "90.00", "good",
+     "Penguin Classics. Sevilen şiirlerde işaret var."),
+    ("Özsel Rumi", "Mevlana Celaleddin Rumi", "9780062509581", "siir", "110.00", "new",
+     "Coleman Barks çevirisi. Çok temiz."),
+    ("Yirmi Aşk Şiiri ve Umutsuz Bir Şarkı", "Pablo Neruda", "9780143039969", "siir", "75.00", "new",
+     "İki dilli baskı, tertemiz."),
+
+    # --- Polisiye (ek) ---
+    ("On Küçük Zenci", "Agatha Christie", "9780062073488", "polisiye", "70.00", "good",
+     "Christie'nin başyapıtı. Sayfalar hafif sararmış."),
+    ("Roger Ackroyd Cinayeti", "Agatha Christie", "9780062073563", "polisiye", "70.00", "good",
+     "Klasik kıvrımlı kurgu. İyi durumda."),
+    ("Nil'de Ölüm", "Agatha Christie", "9780062073556", "polisiye", "75.00", "new",
+     "Poirot serisi. Çok temiz."),
+    ("Baskerville'lerin Köpeği", "Arthur Conan Doyle", "9780140437867", "polisiye", "65.00", "good",
+     "Sherlock Holmes klasiği. Az yıpranmış."),
+    ("Malta Şahini", "Dashiell Hammett", "9780679722649", "polisiye", "80.00", "good",
+     "Kara roman klasiği. İyi durumda."),
+    ("Büyük Uyku", "Raymond Chandler", "9780394758282", "polisiye", "75.00", "good",
+     "Philip Marlowe serisi. Az notlu."),
+    ("Ejderha Dövmeli Kız", "Stieg Larsson", "9780307454546", "polisiye", "110.00", "good",
+     "Millennium serisi 1. kitap. Kalın."),
+    ("Da Vinci Şifresi", "Dan Brown", "9780307474278", "polisiye", "95.00", "good",
+     "Robert Langdon serisi. Çok okunmuş ama sağlam."),
+    ("Kayıp Kız", "Gillian Flynn", "9780307588371", "polisiye", "100.00", "new",
+     "Gerilim. Neredeyse hiç açılmamış."),
+
+    # --- Çocuk & Genç (ek) ---
+    ("Harry Potter ve Felsefe Taşı", "J.K. Rowling", "9780747532699", "cocuk-genc", "140.00", "good",
+     "Serinin ilk kitabı. Kapakta küçük iz."),
+    ("Harry Potter ve Sırlar Odası", "J.K. Rowling", "9780747538493", "cocuk-genc", "140.00", "good",
+     "İkinci kitap. İyi durumda."),
+    ("Charlie'nin Çikolata Fabrikası", "Roald Dahl", "9780142410318", "cocuk-genc", "55.00", "new",
+     "Resimli baskı, tertemiz."),
+    ("Matilda", "Roald Dahl", "9780142410370", "cocuk-genc", "55.00", "new",
+     "Quentin Blake çizimli. Çok güzel durumda."),
+    ("Alice Harikalar Diyarında", "Lewis Carroll", "9780141439761", "cocuk-genc", "60.00", "good",
+     "Penguin Classics. Az yıpranmış."),
+    ("Peter Pan", "J.M. Barrie", "9780141322575", "cocuk-genc", "55.00", "good",
+     "Puffin baskı, iyi durumda."),
+    ("Define Adası", "Robert Louis Stevenson", "9780141321004", "cocuk-genc", "60.00", "good",
+     "Macera klasiği. Birkaç sayfa kıvrık."),
+    ("Açlık Oyunları", "Suzanne Collins", "9780439023528", "cocuk-genc", "110.00", "good",
+     "Serinin ilk kitabı. Çok okunmuş ama sağlam."),
+    ("Narnia: Aslan, Cadı ve Dolap", "C.S. Lewis", "9780064404990", "cocuk-genc", "70.00", "new",
+     "Renkli kapak, tertemiz."),
+    ("Yüzük Kardeşliği", "J.R.R. Tolkien", "9780547928210", "cocuk-genc", "150.00", "good",
+     "Yüzüklerin Efendisi 1. kitap. İyi durumda."),
+
+    # --- Kişisel Gelişim (ek) ---
+    ("İnsanları Etkileme ve Dost Kazanma Sanatı", "Dale Carnegie", "9780671027032", "kisisel-gelisim", "90.00", "good",
+     "Klasik. Az altı çizili."),
+    ("Etkili İnsanların 7 Alışkanlığı", "Stephen Covey", "9780743269513", "kisisel-gelisim", "110.00", "good",
+     "İş ve yaşam için klasik. İyi durumda."),
+    ("Zengin Baba Yoksul Baba", "Robert Kiyosaki", "9781612680194", "kisisel-gelisim", "95.00", "new",
+     "Finansal okuryazarlık. Tertemiz."),
+    ("Hızlı ve Yavaş Düşünme", "Daniel Kahneman", "9780374533557", "kisisel-gelisim", "150.00", "good",
+     "Davranışsal ekonomi klasiği. Az notlu."),
+    ("Akış", "Mihaly Csikszentmihalyi", "9780061339202", "kisisel-gelisim", "100.00", "good",
+     "Mutluluk psikolojisi. İyi durumda."),
+    ("Sıfırdan Bire", "Peter Thiel", "9780804139298", "kisisel-gelisim", "120.00", "new",
+     "Girişimcilik üzerine. Hiç açılmamış gibi."),
+    ("Etki: İkna Psikolojisi", "Robert Cialdini", "9780061241895", "kisisel-gelisim", "115.00", "good",
+     "İkna üzerine temel kitap. Az altı çizili."),
+    ("Sessiz: İçedönüklerin Gücü", "Susan Cain", "9780307352156", "kisisel-gelisim", "105.00", "good",
+     "İçedönüklük üzerine. İyi durumda."),
+    ("Şimdinin Gücü", "Eckhart Tolle", "9781577314806", "kisisel-gelisim", "95.00", "new",
+     "Farkındalık üzerine. Çok temiz."),
+    ("Azim (Grit)", "Angela Duckworth", "9781501111112", "kisisel-gelisim", "110.00", "good",
+     "Tutku ve sebat üzerine. Az notlu."),
 ]
 
 
@@ -243,7 +435,7 @@ def _placeholder_cover(title, author):
 
 
 class Command(BaseCommand):
-    help = "Gerçekçi 30+ kitap, 6 kullanıcı, kategori ve örnek mesajlaşma ile dolu demo verisi."
+    help = "Gerçekçi 120+ kitap, 6 kullanıcı, kategori ve örnek mesajlaşma ile dolu demo verisi."
 
     def add_arguments(self, parser):
         parser.add_argument(
@@ -337,7 +529,7 @@ class Command(BaseCommand):
             return
 
         # Senaryo: bazı kitaplar satılsın
-        for book in random.sample(created_books, k=min(5, len(created_books))):
+        for book in random.sample(created_books, k=min(15, len(created_books))):
             buyer = random.choice([u for u in users if u.id != book.seller_id])
             with transaction.atomic():
                 locked = Book.objects.select_for_update().get(pk=book.pk)
@@ -352,7 +544,7 @@ class Command(BaseCommand):
         self.stdout.write(self.style.SUCCESS("Birkaç kitap satılmış olarak işaretlendi."))
 
         # Favoriler
-        for book in random.sample(created_books, k=min(12, len(created_books))):
+        for book in random.sample(created_books, k=min(35, len(created_books))):
             fans = random.sample(users, k=random.randint(1, 3))
             for u in fans:
                 if u.id != book.seller_id:
@@ -362,7 +554,7 @@ class Command(BaseCommand):
         # Mesajlaşma örneği
         for book in random.sample(
             [b for b in created_books if not b.is_sold],
-            k=min(4, len([b for b in created_books if not b.is_sold])),
+            k=min(10, len([b for b in created_books if not b.is_sold])),
         ):
             buyer = random.choice([u for u in users if u.id != book.seller_id])
             Message.objects.create(
