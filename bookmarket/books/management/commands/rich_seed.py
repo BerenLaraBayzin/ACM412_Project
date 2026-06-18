@@ -20,10 +20,13 @@ from io import BytesIO
 
 from PIL import Image, ImageDraw, ImageFont
 
+from datetime import timedelta
+
 from django.contrib.auth.models import User
 from django.core.files.base import ContentFile
 from django.core.management.base import BaseCommand
 from django.db import transaction
+from django.utils import timezone
 
 from books.models import Book, Category, Message, Order, Review
 
@@ -325,17 +328,85 @@ BOOKS = [
 ]
 
 
-# Demo kullanıcılar — her birine birkaç ilan dağıtılacak
+# Gerçekçi kullanıcılar — ilanlar bunlara dağıtılır (satıcı tabanı).
 DEMO_USERS = [
-    ("demo_ali",    "Ali Yılmaz",    "ali@demo.local"),
-    ("demo_ayse",   "Ayşe Demir",    "ayse@demo.local"),
-    ("demo_can",    "Can Öztürk",    "can@demo.local"),
-    ("demo_defne",  "Defne Aydın",   "defne@demo.local"),
-    ("demo_emre",   "Emre Kaya",     "emre@demo.local"),
-    ("demo_zeynep", "Zeynep Acar",   "zeynep@demo.local"),
+    ("elifyilmaz",   "Elif Yılmaz",     "elif.yilmaz@gmail.com"),
+    ("mkaya",        "Mehmet Kaya",     "mehmet.kaya@gmail.com"),
+    ("zeynep.demir", "Zeynep Demir",    "zeynepdemir@hotmail.com"),
+    ("ahmetsahin",   "Ahmet Şahin",     "ahmet.sahin@gmail.com"),
+    ("ayse_celik",   "Ayşe Çelik",      "ayse.celik@yandex.com"),
+    ("mstf.yildiz",  "Mustafa Yıldız",  "mustafa.yildiz@gmail.com"),
+    ("fatmaarslan",  "Fatma Arslan",    "f.arslan@gmail.com"),
+    ("candogan",     "Can Doğan",       "can.dogan@outlook.com"),
+    ("merveaydin",   "Merve Aydın",     "merve.aydin@gmail.com"),
+    ("emrekoc",      "Emre Koç",        "emre.koc@gmail.com"),
+    ("selinozturk",  "Selin Öztürk",    "selin.ozturk@hotmail.com"),
+    ("burakaksoy",   "Burak Aksoy",     "burak.aksoy@gmail.com"),
+    ("deniz.polat",  "Deniz Polat",     "deniz.polat@gmail.com"),
+    ("gizemerdogan", "Gizem Erdoğan",   "gizem.erdogan@yandex.com"),
+    ("oguzkurt",     "Oğuz Kurt",       "oguz.kurt@gmail.com"),
+    ("ecesimsek",    "Ece Şimşek",      "ece.simsek@gmail.com"),
+    ("kaanaydin",    "Kaan Aydın",      "kaan.aydin@outlook.com"),
+    ("iremyildirim", "İrem Yıldırım",   "irem.yildirim@gmail.com"),
+    ("berkcetin",    "Berk Çetin",      "berk.cetin@gmail.com"),
+    ("silakorkmaz",  "Sıla Korkmaz",    "sila.korkmaz@gmail.com"),
+    ("tolgaaslan",   "Tolga Aslan",     "tolga.aslan@hotmail.com"),
+    ("nilgunes",     "Nil Güneş",       "nil.gunes@gmail.com"),
+    ("baristekin",   "Barış Tekin",     "baris.tekin@gmail.com"),
+    ("pelinacar",    "Pelin Acar",      "pelin.acar@gmail.com"),
 ]
 
-DEMO_PASSWORD = "demo1234"
+DEMO_PASSWORD = "kitap1234"
+
+
+# Gerçekçi teslimat adresleri (sipariş senaryosu için).
+DEMO_ADDRESSES = [
+    "Bağlarbaşı Mah. Atatürk Cad. No:14 D:5, Maltepe / İstanbul",
+    "Kızılay Mah. G.M.K. Bulvarı No:88/3, Çankaya / Ankara",
+    "Alsancak Mah. Kıbrıs Şehitleri Cad. No:21 D:7, Konak / İzmir",
+    "Kültür Mah. Lara Cad. No:45 D:2, Muratpaşa / Antalya",
+    "Cumhuriyet Mah. İnönü Cad. No:7 D:9, Nilüfer / Bursa",
+    "Çayyolu Mah. 8. Cad. No:32 D:11, Çankaya / Ankara",
+    "Göztepe Mah. Bağdat Cad. No:210 D:4, Kadıköy / İstanbul",
+    "Karşıyaka Mah. Cemal Gürsel Cad. No:55 D:6, Karşıyaka / İzmir",
+    "Selçuklu Mah. Mevlana Cad. No:18 D:6, Selçuklu / Konya",
+    "Yenişehir Mah. İstiklal Cad. No:9 D:3, Yenimahalle / Ankara",
+    "Caferağa Mah. Moda Cad. No:74 D:3, Kadıköy / İstanbul",
+    "Ostim Mah. 100. Yıl Bulvarı No:120, Yenimahalle / Ankara",
+]
+
+
+# Çeşitli puanlı, doğal satıcı yorumları: (puan, yorum)
+REVIEW_SAMPLES = [
+    (5, "Kitap aynen tarif edildiği gibiydi, ertesi gün kargoya verdi. Teşekkürler!"),
+    (5, "Çok ilgili bir satıcı. Paketleme özenliydi, kitap tertemiz geldi."),
+    (5, "İletişimi kuvvetli, sorularıma hemen döndü. Gönül rahatlığıyla alın."),
+    (5, "Beklediğimden çok daha iyi durumdaydı, kesinlikle tavsiye ederim."),
+    (4, "Kitap iyiydi, kargo bir gün gecikti ama satıcı bilgilendirdi."),
+    (4, "Açıklamadaki gibi, memnun kaldım. Hafif yıpranma vardı, sorun değil."),
+    (4, "Hızlı ve sorunsuz bir alışverişti, teşekkürler."),
+    (4, "Fiyat/performans iyi. Kapakta küçük bir iz vardı, belirtilmişti zaten."),
+    (3, "Kitap idare eder durumdaydı, fotoğraftakinden biraz daha eskiydi."),
+    (3, "Kargo biraz uzun sürdü ama sonunda elime ulaştı."),
+    (2, "Sayfalarda beklediğimden fazla çizim vardı, açıklamada yazmıyordu."),
+    (5, ""),
+    (4, ""),
+]
+
+
+# Doğal alıcı–satıcı mesaj senaryoları: (alıcı sorusu, satıcı yanıtı)
+MESSAGE_SAMPLES = [
+    ("Merhaba, kitap hâlâ satışta mı? Kapakta belirgin bir hasar var mı?",
+     "Merhaba, evet satışta. Kapak temiz, sadece sırtta hafif bir kıvrım var."),
+    ("Selam, kargo dahil mi yoksa ayrı mı? Bugün sipariş versem ne zaman gönderirsiniz?",
+     "Merhaba, kargo alıcıya ait. Bugün verirseniz yarın kargoya bırakırım."),
+    ("Fiyatta biraz esneme şansınız var mı acaba?",
+     "Merhaba, küçük bir indirim yapabilirim. Alırsanız anlaşabiliriz."),
+    ("İçinde altı çizili yerler ya da not var mı?",
+     "Birkaç sayfada kurşunkalemle altı çizili var, silinebilir durumda."),
+    ("Merhaba, başka kitaplarınızla birlikte alsam toplu indirim olur mu?",
+     "Tabii, iki ve üzeri alımda kargoyu ben karşılarım."),
+]
 
 
 def _fetch(url, timeout=8):
@@ -435,7 +506,7 @@ def _placeholder_cover(title, author):
 
 
 class Command(BaseCommand):
-    help = "Gerçekçi 120+ kitap, 6 kullanıcı, kategori ve örnek mesajlaşma ile dolu demo verisi."
+    help = "Gerçekçi 120+ kitap, 24 satıcı, zamana yayılmış ilanlar, siparişler, puanlar ve mesajlarla dolu örnek veri."
 
     def add_arguments(self, parser):
         parser.add_argument(
@@ -452,8 +523,14 @@ class Command(BaseCommand):
         skip_covers = options["no_covers"]
 
         if not keep:
-            self.stdout.write("Eski demo veriler temizleniyor...")
-            User.objects.filter(username__in=[u[0] for u in DEMO_USERS]).delete()
+            # Tam temiz başlangıç: eski örnek içerik (eski commit'li db dahil)
+            # tamamen silinir; yalnızca admin/staff hesapları korunur.
+            self.stdout.write("Eski örnek veriler temizleniyor...")
+            Review.objects.all().delete()
+            Order.objects.all().delete()
+            Message.objects.all().delete()
+            Book.objects.all().delete()
+            User.objects.filter(is_staff=False, is_superuser=False).delete()
 
         # Kategoriler
         cat_map = {}
@@ -479,17 +556,23 @@ class Command(BaseCommand):
                 user.save()
             users.append(user)
         self.stdout.write(self.style.SUCCESS(
-            f"{len(users)} demo kullanıcı (şifre: {DEMO_PASSWORD})."
+            f"{len(users)} satıcı/kullanıcı hazır (ortak şifre: {DEMO_PASSWORD})."
         ))
 
         # Kitaplar
         random.seed(42)
+        now = timezone.now()
         cover_hits = 0
         cover_misses = 0
         created_books = []
+        created_at_map = {}  # book.pk -> ilan tarihi (zamana yayılmış)
+        # Satıcıları kitaplara dengeli ama rastgele dağıt (her ilan aynı
+        # satıcıya gitmesin diye karıştırılmış sıra kullanılır).
+        seller_cycle = users * (len(BOOKS) // len(users) + 1)
+        random.shuffle(seller_cycle)
         with transaction.atomic():
             for i, (title, author, isbn, cat_slug, price, condition, desc) in enumerate(BOOKS):
-                seller = users[i % len(users)]
+                seller = seller_cycle[i]
                 if Book.objects.filter(title=title, seller=seller).exists():
                     continue
                 book = Book(
@@ -517,6 +600,16 @@ class Command(BaseCommand):
                     )
                 book.save()
                 created_books.append(book)
+                # İlan tarihini son ~5 ay içine yay; çoğu ilan birkaç hafta
+                # öncesine denk gelsin (triangular tepe ~3 hafta).
+                days_ago = int(random.triangular(0, 150, 22))
+                listed_at = now - timedelta(
+                    days=days_ago,
+                    hours=random.randint(0, 23),
+                    minutes=random.randint(0, 59),
+                )
+                created_at_map[book.pk] = listed_at
+                Book.objects.filter(pk=book.pk).update(created_at=listed_at)
 
         self.stdout.write(self.style.SUCCESS(
             f"{len(created_books)} kitap eklendi (kapak: {cover_hits} bulundu, {cover_misses} placeholder)."
@@ -528,75 +621,90 @@ class Command(BaseCommand):
             ))
             return
 
-        # Senaryo: bazı kitaplar satılsın
+        # Senaryo: kitapların bir kısmı geçmişte satılmış olsun.
+        # Sipariş tarihi ilanın yayın tarihinden sonra, gerçekçi bir adresle.
         sold_orders = []
-        for book in random.sample(created_books, k=min(15, len(created_books))):
+        sold_sample = random.sample(
+            created_books, k=min(28, len(created_books))
+        )
+        for book in sold_sample:
             buyer = random.choice([u for u in users if u.id != book.seller_id])
+            listed_at = created_at_map.get(book.pk, now - timedelta(days=20))
+            span_days = max(2, (now - listed_at).days)
+            ordered_at = listed_at + timedelta(
+                days=random.randint(1, span_days),
+                hours=random.randint(0, 23),
+            )
+            if ordered_at > now:
+                ordered_at = now - timedelta(hours=random.randint(1, 12))
             with transaction.atomic():
                 locked = Book.objects.select_for_update().get(pk=book.pk)
                 if locked.is_sold or Order.objects.filter(book=locked).exists():
                     continue
                 order = Order.objects.create(
                     buyer=buyer, book=locked,
-                    address=f"Demo adres — {buyer.first_name}",
+                    address=random.choice(DEMO_ADDRESSES),
                 )
+                Order.objects.filter(pk=order.pk).update(ordered_at=ordered_at)
+                order.ordered_at = ordered_at
                 locked.is_sold = True
                 locked.save(update_fields=["is_sold"])
                 sold_orders.append(order)
         self.stdout.write(self.style.SUCCESS(
-            f"{len(sold_orders)} kitap satılmış olarak işaretlendi."
+            f"{len(sold_orders)} sipariş oluşturuldu (satılmış ilanlar)."
         ))
 
-        # Satıcı değerlendirmeleri — satılan siparişlerin çoğuna puan + yorum
-        review_comments = [
-            "Kitap tarif edildiği gibiydi, hızlı kargo. Teşekkürler!",
-            "Satıcı çok ilgiliydi, kitap tertemiz geldi.",
-            "İletişim güzeldi ama kargo biraz gecikti.",
-            "Açıklamadaki gibi, gönül rahatlığıyla alışveriş yapabilirsiniz.",
-            "Paketleme özenliydi, kitap yıllanmış ama okunaklı.",
-            "Beklediğimden daha iyi durumdaydı, çok memnun kaldım.",
-            "Sorularıma hızlı yanıt verdi, tavsiye ederim.",
-            "",
-        ]
+        # Satıcı değerlendirmeleri — siparişlerin çoğuna çeşitli puanlı yorum.
+        # Yorum tarihi siparişten birkaç gün sonrasına denk gelir.
         reviewed = 0
         for order in sold_orders:
-            if random.random() < 0.75:
-                Review.objects.create(
+            if random.random() < 0.8:
+                rating, comment = random.choice(REVIEW_SAMPLES)
+                review = Review.objects.create(
                     order=order,
                     reviewer=order.buyer,
                     seller=order.book.seller,
-                    rating=random.choice([3, 4, 4, 5, 5, 5]),
-                    comment=random.choice(review_comments),
+                    rating=rating,
+                    comment=comment,
                 )
+                review_at = order.ordered_at + timedelta(
+                    days=random.randint(2, 16), hours=random.randint(0, 23)
+                )
+                if review_at > now:
+                    review_at = now - timedelta(hours=random.randint(1, 6))
+                Review.objects.filter(pk=review.pk).update(created_at=review_at)
                 reviewed += 1
         self.stdout.write(self.style.SUCCESS(f"{reviewed} satıcı değerlendirmesi eklendi."))
 
-        # Favoriler
-        for book in random.sample(created_books, k=min(35, len(created_books))):
-            fans = random.sample(users, k=random.randint(1, 3))
+        # Favoriler — popülerlik dağılımı (bazı kitaplar çok, bazıları az).
+        fav_total = 0
+        for book in random.sample(created_books, k=min(70, len(created_books))):
+            fans = random.sample(users, k=random.randint(1, 6))
             for u in fans:
                 if u.id != book.seller_id:
                     book.favorited_by.add(u)
-        self.stdout.write(self.style.SUCCESS("Rastgele favoriler eklendi."))
+                    fav_total += 1
+        self.stdout.write(self.style.SUCCESS(f"{fav_total} favori ilişkisi eklendi."))
 
-        # Mesajlaşma örneği
-        for book in random.sample(
-            [b for b in created_books if not b.is_sold],
-            k=min(10, len([b for b in created_books if not b.is_sold])),
-        ):
+        # Mesajlaşma — doğal alıcı–satıcı diyalogları.
+        active_books = [b for b in created_books if not b.is_sold]
+        msg_threads = 0
+        for book in random.sample(active_books, k=min(18, len(active_books))):
             buyer = random.choice([u for u in users if u.id != book.seller_id])
+            question, answer = random.choice(MESSAGE_SAMPLES)
             Message.objects.create(
-                sender=buyer, receiver=book.seller, book=book,
-                body=f"Merhaba, {book.title} hâlâ satışta mı? Pazarlık şansı var mı?",
+                sender=buyer, receiver=book.seller, book=book, body=question,
             )
-            Message.objects.create(
-                sender=book.seller, receiver=buyer, book=book,
-                body="Merhaba, evet hâlâ satışta. Fiyatta küçük indirim yapabilirim.",
-            )
-        self.stdout.write(self.style.SUCCESS("Örnek mesajlaşmalar eklendi."))
+            # Satıcı yanıtı her zaman gelmesin — bazı konuşmalar yanıtsız.
+            if random.random() < 0.75:
+                Message.objects.create(
+                    sender=book.seller, receiver=buyer, book=book, body=answer,
+                )
+            msg_threads += 1
+        self.stdout.write(self.style.SUCCESS(f"{msg_threads} mesaj konuşması eklendi."))
 
         self.stdout.write("")
         self.stdout.write(self.style.WARNING("Tarayıcıda dene:"))
-        self.stdout.write(f"  Giriş: /users/login/  → demo_ali / {DEMO_PASSWORD}")
+        self.stdout.write(f"  Giriş: /users/login/  → {DEMO_USERS[0][0]} / {DEMO_PASSWORD}")
         self.stdout.write("  Admin: /admin/")
         self.stdout.write("  API:   /api/books/")
