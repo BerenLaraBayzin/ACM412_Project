@@ -25,7 +25,7 @@ from django.core.files.base import ContentFile
 from django.core.management.base import BaseCommand
 from django.db import transaction
 
-from books.models import Book, Category, Message, Order
+from books.models import Book, Category, Message, Order, Review
 
 
 CATEGORIES = [
@@ -529,19 +529,47 @@ class Command(BaseCommand):
             return
 
         # Senaryo: bazı kitaplar satılsın
+        sold_orders = []
         for book in random.sample(created_books, k=min(15, len(created_books))):
             buyer = random.choice([u for u in users if u.id != book.seller_id])
             with transaction.atomic():
                 locked = Book.objects.select_for_update().get(pk=book.pk)
                 if locked.is_sold or Order.objects.filter(book=locked).exists():
                     continue
-                Order.objects.create(
+                order = Order.objects.create(
                     buyer=buyer, book=locked,
                     address=f"Demo adres — {buyer.first_name}",
                 )
                 locked.is_sold = True
                 locked.save(update_fields=["is_sold"])
-        self.stdout.write(self.style.SUCCESS("Birkaç kitap satılmış olarak işaretlendi."))
+                sold_orders.append(order)
+        self.stdout.write(self.style.SUCCESS(
+            f"{len(sold_orders)} kitap satılmış olarak işaretlendi."
+        ))
+
+        # Satıcı değerlendirmeleri — satılan siparişlerin çoğuna puan + yorum
+        review_comments = [
+            "Kitap tarif edildiği gibiydi, hızlı kargo. Teşekkürler!",
+            "Satıcı çok ilgiliydi, kitap tertemiz geldi.",
+            "İletişim güzeldi ama kargo biraz gecikti.",
+            "Açıklamadaki gibi, gönül rahatlığıyla alışveriş yapabilirsiniz.",
+            "Paketleme özenliydi, kitap yıllanmış ama okunaklı.",
+            "Beklediğimden daha iyi durumdaydı, çok memnun kaldım.",
+            "Sorularıma hızlı yanıt verdi, tavsiye ederim.",
+            "",
+        ]
+        reviewed = 0
+        for order in sold_orders:
+            if random.random() < 0.75:
+                Review.objects.create(
+                    order=order,
+                    reviewer=order.buyer,
+                    seller=order.book.seller,
+                    rating=random.choice([3, 4, 4, 5, 5, 5]),
+                    comment=random.choice(review_comments),
+                )
+                reviewed += 1
+        self.stdout.write(self.style.SUCCESS(f"{reviewed} satıcı değerlendirmesi eklendi."))
 
         # Favoriler
         for book in random.sample(created_books, k=min(35, len(created_books))):

@@ -55,13 +55,24 @@
     {% if purchases %}
         <div style="margin-bottom: 3rem;">
             {% for o in purchases %}
-                <a class="listing-item thread-item" href="{% url 'book_detail' o.book.pk %}">
+                <div class="listing-item thread-item">
                     <div class="head">
-                        <div class="title">{{ o.book.title }}</div>
+                        <a class="title" href="{% url 'book_detail' o.book.pk %}" style="text-decoration:none; color:inherit;">{{ o.book.title }}</a>
                         <div class="ts">{{ o.ordered_at|date:"d M Y" }}</div>
                     </div>
-                    <div class="other">{{ o.book.author }} · {{ o.book.price|floatformat:0 }} ₺</div>
-                </a>
+                    <div class="other">{{ o.book.author }} · {{ o.book.price|floatformat:0 }} ₺ · Satıcı: {{ o.book.seller.username }}</div>
+                    <div class="purchase-review">
+                        {% if o.review %}
+                            <span class="review-done">
+                                {% include 'books/_stars.html' with value=o.review.rating %}
+                                Değerlendirildi
+                            </span>
+                            <a class="review-edit" href="{% url 'review_create' o.pk %}">Düzenle</a>
+                        {% else %}
+                            <a class="btn btn-sm" href="{% url 'review_create' o.pk %}">★ Satıcıyı değerlendir</a>
+                        {% endif %}
+                    </div>
+                </div>
             {% endfor %}
         </div>
     {% else %}

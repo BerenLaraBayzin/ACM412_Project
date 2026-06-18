@@ -1292,3 +1292,171 @@ footer.site-footer .footer-bottom {
   .section { margin: 3rem 0; }
   .form-card { padding: 1.5rem; }
 }
+
+/* ─────────────────────────────────────────────
+   Değerlendirme & satıcı profili (v2 özellikleri)
+   ───────────────────────────────────────────── */
+
+/* Yıldız puanı bileşeni — kesirli puanı genişlik yüzdesiyle gösterir */
+.rating {
+  position: relative;
+  display: inline-block;
+  white-space: nowrap;
+  font-size: 1rem;
+  line-height: 1;
+  vertical-align: middle;
+  letter-spacing: 1px;
+}
+.rating-back { color: var(--line-strong); }
+.rating-fore {
+  position: absolute;
+  top: 0;
+  left: 0;
+  overflow: hidden;
+  color: #f5b301;
+}
+[data-theme="dark"] .rating-fore { color: #fbbf24; }
+
+/* Satıcı profili başlığı */
+.seller-hero {
+  display: flex;
+  align-items: center;
+  gap: 1.5rem;
+  flex-wrap: wrap;
+  background: var(--bg-card);
+  border: 1px solid var(--line);
+  border-radius: var(--r-lg);
+  padding: 2rem;
+  margin-top: 1.5rem;
+  box-shadow: var(--shadow-sm);
+}
+.seller-avatar {
+  width: 76px;
+  height: 76px;
+  flex: 0 0 auto;
+  border-radius: 50%;
+  background: var(--accent);
+  color: var(--accent-on);
+  display: grid;
+  place-items: center;
+  font-family: var(--font-serif);
+  font-size: 2rem;
+  font-weight: 600;
+}
+.seller-id { flex: 1 1 240px; }
+.seller-id h1 { margin: 0.2rem 0; font-size: 1.8rem; }
+.seller-sub { color: var(--text-muted); font-size: 0.9rem; }
+.seller-rating-line {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  margin-top: 0.6rem;
+  font-size: 0.95rem;
+}
+.seller-rating-line.muted { color: var(--text-muted); }
+.seller-rating-line .muted { color: var(--text-muted); }
+.seller-stats {
+  display: flex;
+  gap: 1.8rem;
+  flex: 0 0 auto;
+}
+.seller-stats .stat { text-align: center; }
+.seller-stats .stat .n {
+  display: block;
+  font-family: var(--font-serif);
+  font-size: 1.7rem;
+  font-weight: 600;
+  color: var(--text);
+}
+.seller-stats .stat .l {
+  font-size: 0.78rem;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: var(--text-muted);
+}
+
+/* Yorum listesi */
+.review-list { display: grid; gap: 1rem; }
+.review-item {
+  background: var(--bg-card);
+  border: 1px solid var(--line);
+  border-radius: var(--r);
+  padding: 1.1rem 1.25rem;
+}
+.review-head {
+  display: flex;
+  align-items: center;
+  gap: 0.65rem;
+  flex-wrap: wrap;
+}
+.review-author { font-weight: 600; }
+.review-date { color: var(--text-muted); font-size: 0.82rem; margin-left: auto; }
+.review-body { margin: 0.6rem 0 0.5rem; color: var(--text); line-height: 1.55; }
+.review-book {
+  font-size: 0.85rem;
+  color: var(--text-muted);
+  text-decoration: none;
+}
+.review-book:hover { color: var(--accent); }
+
+/* Detay sayfası satıcı kartı */
+.seller-link { color: var(--accent); text-decoration: none; font-weight: 600; }
+.seller-link:hover { text-decoration: underline; }
+.seller-card {
+  display: flex;
+  align-items: center;
+  gap: 0.9rem;
+  margin-top: 1.5rem;
+  padding: 0.9rem 1.1rem;
+  background: var(--bg-alt);
+  border: 1px solid var(--line);
+  border-radius: var(--r);
+  text-decoration: none;
+  color: inherit;
+  transition: border-color 0.18s ease, transform 0.18s ease;
+}
+.seller-card:hover { border-color: var(--accent); transform: translateY(-1px); }
+.seller-card-avatar {
+  width: 44px;
+  height: 44px;
+  border-radius: 50%;
+  background: var(--accent);
+  color: var(--accent-on);
+  display: grid;
+  place-items: center;
+  font-weight: 600;
+  flex: 0 0 auto;
+}
+.seller-card-info { display: flex; flex-direction: column; }
+.seller-card-name { font-weight: 600; }
+.seller-card-meta { font-size: 0.82rem; color: var(--text-muted); }
+.seller-card-go { margin-left: auto; color: var(--accent); font-size: 0.85rem; font-weight: 600; }
+
+/* Profil — satın alınanlarda değerlendirme aksiyonu */
+.purchase-review {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  margin-top: 0.6rem;
+}
+.review-done {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  font-size: 0.85rem;
+  color: var(--success);
+  font-weight: 600;
+}
+.review-edit { font-size: 0.82rem; color: var(--text-muted); text-decoration: none; }
+.review-edit:hover { color: var(--accent); text-decoration: underline; }
+.btn-sm { padding: 0.4rem 0.85rem; font-size: 0.85rem; }
+
+/* Mikro animasyon — kart ve bölüm girişleri */
+@keyframes bm-fade-up {
+  from { opacity: 0; transform: translateY(12px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+@media (prefers-reduced-motion: no-preference) {
+  .book-grid .book-card { animation: bm-fade-up 0.4s ease both; }
+  .review-item { animation: bm-fade-up 0.35s ease both; }
+}

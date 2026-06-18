@@ -1,0 +1,84 @@
+{% extends 'base.html' %}
+
+{% block title %}{{ seller.username }} — Satıcı Profili — BookMarket{% endblock %}
+
+{% block content %}
+<div style="padding-top: 1rem;">
+    <a href="{% url 'book_list' %}" style="color: var(--text-muted); font-size: 0.9rem;">← Tüm kitaplar</a>
+</div>
+
+<section class="seller-hero">
+    <div class="seller-avatar">{{ seller.username|first|upper }}</div>
+    <div class="seller-id">
+        <div class="eyebrow">Satıcı</div>
+        <h1>{{ seller.get_full_name|default:seller.username }}</h1>
+        <div class="seller-sub">@{{ seller.username }} · {{ seller.date_joined|date:"M Y" }} tarihinden beri üye</div>
+        {% if rating.count %}
+        <div class="seller-rating-line">
+            {% include 'books/_stars.html' with value=rating.avg %}
+            <strong>{{ rating.avg|floatformat:1 }}</strong>
+            <span class="muted">({{ rating.count }} değerlendirme)</span>
+        </div>
+        {% else %}
+        <div class="seller-rating-line muted">Henüz değerlendirilmemiş</div>
+        {% endif %}
+    </div>
+    <div class="seller-stats">
+        <div class="stat"><span class="n">{{ active_count }}</span><span class="l">Aktif ilan</span></div>
+        <div class="stat"><span class="n">{{ sold_count }}</span><span class="l">Satıldı</span></div>
+        <div class="stat"><span class="n">{{ rating.count }}</span><span class="l">Yorum</span></div>
+    </div>
+</section>
+
+<section class="section">
+    <div class="section-head">
+        <div>
+            <h2>Aktif ilanlar</h2>
+            <div class="sub">{{ active_count }} kitap satışta</div>
+        </div>
+    </div>
+    {% if listings %}
+        <div class="book-grid">
+            {% for book in listings %}
+                {% include 'books/_book_card.html' with book=book %}
+            {% endfor %}
+        </div>
+    {% else %}
+        <div class="empty">
+            <div class="emoji">📭</div>
+            <h3>Aktif ilan yok</h3>
+            <p>Bu satıcının şu an satışta kitabı bulunmuyor.</p>
+        </div>
+    {% endif %}
+</section>
+
+<section class="section">
+    <div class="section-head">
+        <div>
+            <h2>Değerlendirmeler</h2>
+            <div class="sub">Alıcıların geri bildirimleri</div>
+        </div>
+    </div>
+    {% if reviews %}
+        <div class="review-list">
+            {% for r in reviews %}
+            <article class="review-item">
+                <div class="review-head">
+                    <span class="review-author">{{ r.reviewer.username }}</span>
+                    {% include 'books/_stars.html' with value=r.rating %}
+                    <span class="review-date">{{ r.created_at|date:"d M Y" }}</span>
+                </div>
+                {% if r.comment %}<p class="review-body">{{ r.comment }}</p>{% endif %}
+                <a class="review-book" href="{% url 'book_detail' r.order.book.pk %}">📖 {{ r.order.book.title }}</a>
+            </article>
+            {% endfor %}
+        </div>
+    {% else %}
+        <div class="empty">
+            <div class="emoji">⭐</div>
+            <h3>Henüz değerlendirme yok</h3>
+            <p>Bu satıcıdan alışveriş yapan ilk kişi siz olun.</p>
+        </div>
+    {% endif %}
+</section>
+{% endblock %}

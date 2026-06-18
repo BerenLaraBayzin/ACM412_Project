@@ -1,3 +1,4 @@
+from django.db.models import Avg
 from rest_framework import serializers
 
 from .models import Book, Category
@@ -15,6 +16,7 @@ class BookSerializer(serializers.ModelSerializer):
     condition_display = serializers.CharField(source='get_condition_display', read_only=True)
     favorite_count = serializers.IntegerField(read_only=True)
     image = serializers.ImageField(read_only=True)
+    seller_rating = serializers.SerializerMethodField()
 
     class Meta:
         model = Book
@@ -33,9 +35,15 @@ class BookSerializer(serializers.ModelSerializer):
             'category_name',
             'seller',
             'seller_username',
+            'seller_rating',
             'favorite_count',
         ]
         read_only_fields = ['is_sold', 'created_at', 'seller']
+
+    def get_seller_rating(self, obj):
+        """Satıcının ortalama puanı (değerlendirme yoksa null)."""
+        avg = obj.seller.received_reviews.aggregate(avg=Avg('rating'))['avg']
+        return round(avg, 2) if avg is not None else None
 
 
 class BookCreateSerializer(serializers.ModelSerializer):

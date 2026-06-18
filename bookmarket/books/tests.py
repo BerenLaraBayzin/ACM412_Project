@@ -5,7 +5,7 @@ from django.core.files.uploadedfile import SimpleUploadedFile
 from django.test import Client, TestCase
 from django.urls import reverse
 
-from .models import Book, Category, Message, Order
+from .models import Book, Category, Message, Order, Review
 
 
 TINY_GIF = (
@@ -274,3 +274,97 @@ class UserRegisterTests(TestCase):
         )
         self.assertEqual(r.status_code, 200)
         self.assertTrue(User.objects.filter(username="yeni").exists())
+
+
+class SortTests(TestCase):
+    def setUp(self):
+        self.user = User.objects.create_user(username="ali", password="testpass123")
+        self.cat = Category.objects.create(name="Roman", slug="roman")
+        self.cheap = Book.objects.create(
+            seller=self.user, category=self.cat, title="Ucuz Kitap", author="A",
+            description="d", price=Decimal("10.00"), condition="good", image=_img(),
+        )
+        self.pricey = Book.objects.create(
+            seller=self.user, category=self.cat, title="Pahalı Kitap", author="A",
+            description="d", price=Decimal("500.00"), condition="good", image=_img(),
+        )
+
+    def test_sort_price_asc_orders_cheapest_first(self):
+        r = self.client.get(reverse("book_list"), {"sort": "price_asc"})
+        self.assertEqual(r.status_code, 200)
+        content = r.content.decode()
+        self.assertLess(content.index("Ucuz Kitap"), content.index("Pahalı Kitap"))
+
+    def test_sort_price_desc_orders_priciest_first(self):
+        r = self.client.get(reverse("book_list"), {"sort": "price_desc"})
+        content = r.content.decode()
+        self.assertLess(content.index("Pahalı Kitap"), content.index("Ucuz Kitap"))
+
+    def test_invalid_sort_falls_back(self):
+        r = self.client.get(reverse("book_list"), {"sort": "bogus"})
+        self.assertEqual(r.status_code, 200)
+
+
+class ReviewTests(TestCase):
+    def setUp(self):
+        self.seller = User.objects.create_user(username="satici", password="pass12345")
+        self.buyer = User.objects.create_user(username="alici", password="pass12345")
+        self.cat = Category.objects.create(name="Roman", slug="roman")
+        self.book = Book.objects.create(
+            seller=self.seller, category=self.cat, title="Satılan Kitap", author="Y",
+            description="d", price=Decimal("50.00"), condition="good",
+            image=_img(), is_sold=True,
+        )
+        self.order = Order.objects.create(
+            buyer=self.buyer, book=self.book, address="İstanbul",
+        )
+
+    def test_buyer_can_create_review(self):
+        self.client.login(username="alici", password="pass12345")
+        r = self.client.post(
+            reverse("review_create", args=[self.order.pk]),
+            {"rating": 5, "comment": "Harika satıcı"},
+            follow=True,
+        )
+        self.assertEqual(r.status_code, 200)
+        review = Review.objects.get(order=self.order)
+        self.assertEqual(review.rating, 5)
+        self.assertEqual(review.seller, self.seller)
+        self.assertEqual(review.reviewer, self.buyer)
+
+    def test_non_buyer_cannot_review(self):
+        other = User.objects.create_user(username="yabanci", password="pass12345")
+        self.client.login(username="yabanci", password="pass12345")
+        r = self.client.post(
+            reverse("review_create", args=[self.order.pk]),
+            {"rating": 1, "comment": "x"},
+        )
+        self.assertEqual(r.status_code, 403)
+        self.assertFalse(Review.objects.filter(order=self.order).exists())
+
+    def test_review_updates_in_place(self):
+        self.client.login(username="alici", password="pass12345")
+        self.client.post(
+            reverse("review_create", args=[self.order.pk]),
+            {"rating": 3, "comment": " ilk"},
+        )
+        self.client.post(
+            reverse("review_create", args=[self.order.pk]),
+            {"rating": 5, "comment": "düzeltildi"},
+        )
+        self.assertEqual(Review.objects.filter(order=self.order).count(), 1)
+        self.assertEqual(Review.objects.get(order=self.order).rating, 5)
+
+    def test_seller_profile_shows_rating(self):
+        Review.objects.create(
+            order=self.order, reviewer=self.buyer, seller=self.seller,
+            rating=4, comment="iyi",
+        )
+        r = self.client.get(reverse("seller_profile", args=[self.seller.username]))
+        self.assertEqual(r.status_code, 200)
+        self.assertContains(r, self.seller.username)
+        self.assertContains(r, "iyi")
+
+    def test_seller_profile_404_for_unknown(self):
+        r = self.client.get(reverse("seller_profile", args=["yokboyle"]))
+        self.assertEqual(r.status_code, 404)

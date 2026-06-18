@@ -90,3 +90,37 @@ class Order(models.Model):
 
     def __str__(self):
         return f"Order: {self.book.title} by {self.buyer.username}"
+
+
+class Review(models.Model):
+    """Alıcının, satın aldığı kitabın satıcısına bıraktığı puan ve yorum.
+
+    Her sipariş için en fazla bir değerlendirme yapılır (``order`` OneToOne).
+    ``seller`` alanı ``order.book.seller`` ile aynıdır; satıcı bazlı ortalama
+    puanı tek sorguda hesaplayabilmek için denormalize edilmiştir.
+    """
+    RATING_CHOICES = [(i, f"{i} yıldız") for i in range(1, 6)]
+
+    order = models.OneToOneField(
+        Order, on_delete=models.CASCADE, related_name='review'
+    )
+    reviewer = models.ForeignKey(
+        User, on_delete=models.CASCADE, related_name='given_reviews'
+    )
+    seller = models.ForeignKey(
+        User, on_delete=models.CASCADE, related_name='received_reviews'
+    )
+    rating = models.PositiveSmallIntegerField(choices=RATING_CHOICES)
+    comment = models.TextField(blank=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        ordering = ['-created_at']
+
+    def __str__(self):
+        return f"{self.reviewer} → {self.seller}: {self.rating}★"
+
+    @property
+    def stars(self):
+        """Şablonda kolay döngü için dolu (True) / boş (False) yıldız listesi."""
+        return [i <= self.rating for i in range(1, 6)]

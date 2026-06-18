@@ -1,0 +1,9 @@
+{% comment %}
+Yıldız puanı bileşeni.
+  value : 0-5 arası sayı (float olabilir) — dolu yıldız oranını belirler.
+Kesirli puanlar CSS genişlik yüzdesiyle gösterilir.
+{% endcomment %}
+<span class="rating" title="{{ value|floatformat:1 }} / 5" aria-label="{{ value|floatformat:1 }} / 5 puan">
+    <span class="rating-back">★★★★★</span>
+    <span class="rating-fore" style="width: {% widthratio value 5 100 %}%;">★★★★★</span>
+</span>

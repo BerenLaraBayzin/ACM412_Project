@@ -10,14 +10,33 @@ from django.contrib.auth import get_user_model
 from django.contrib.auth.decorators import login_required
 from django.core.paginator import Paginator
 from django.db import transaction
-from django.db.models import Count, Q
+from django.db.models import Avg, Count, Q
 from django.http import HttpResponseForbidden, JsonResponse
 from django.shortcuts import get_object_or_404, redirect, render
 from django.utils import timezone
 from django.views.decorators.http import require_POST
 
-from .forms import BookForm, MessageForm, OrderPurchaseForm
-from .models import Book, Category, Message, Order
+from .forms import BookForm, MessageForm, OrderPurchaseForm, ReviewForm
+from .models import Book, Category, Message, Order, Review
+
+
+# Sıralama seçenekleri: arayüzdeki değer -> (etiket, ORM order_by ifadesi)
+SORT_OPTIONS = {
+    'new': ('En yeni', '-created_at'),
+    'price_asc': ('Fiyat (artan)', 'price'),
+    'price_desc': ('Fiyat (azalan)', '-price'),
+    'popular': ('En çok beğenilen', '-fav_count'),
+}
+
+
+def seller_rating(user):
+    """Bir satıcının aldığı değerlendirmelerin ortalaması ve sayısı.
+
+    Tek bir aggregate sorgusuyla hesaplanır. Döndürülen ``avg`` None olabilir
+    (hiç değerlendirme yoksa); şablon tarafında ``default`` ile ele alınır.
+    """
+    agg = user.received_reviews.aggregate(avg=Avg('rating'), count=Count('id'))
+    return {'avg': agg['avg'], 'count': agg['count']}
 
 
 def _mark_new_flag(books):
@@ -45,8 +64,13 @@ def book_list(request):
     qs = (
         Book.objects.filter(is_sold=False)
         .select_related('category', 'seller')
-        .order_by('-created_at')
+        .annotate(fav_count=Count('favorited_by'))
     )
+
+    sort = request.GET.get('sort')
+    if sort not in SORT_OPTIONS:
+        sort = 'new'
+    qs = qs.order_by(SORT_OPTIONS[sort][1], '-created_at')
 
     q = request.GET.get('q', '').strip()
     if q:
@@ -75,7 +99,7 @@ def book_list(request):
         pass
 
     has_filters = any([q, category_id, condition, request.GET.get('min_price'),
-                       request.GET.get('max_price')])
+                       request.GET.get('max_price'), request.GET.get('sort')])
     show_home_widgets = not has_filters
 
     deal_book = None
@@ -150,6 +174,8 @@ def book_list(request):
         'filter_condition': condition or '',
         'filter_min_price': request.GET.get('min_price', ''),
         'filter_max_price': request.GET.get('max_price', ''),
+        'filter_sort': sort,
+        'sort_options': [(key, label) for key, (label, _) in SORT_OPTIONS.items()],
         'querystring': _filter_querystring(request),
         'user_favorite_ids': user_favorite_ids,
         'total_count': total_count,
@@ -209,6 +235,7 @@ def book_detail(request, pk):
     context = {
         'book': book,
         'favorite_count': book.favorited_by.count(),
+        'seller_rating': seller_rating(book.seller),
     }
     user = request.user
     if user.is_authenticated:
@@ -590,4 +617,82 @@ def message_thread(request, book_pk, user_pk):
             'thread_messages': thread_messages,
             'form': form,
         },
+    )
+
+
+def seller_profile(request, username):
+    """Herkese açık satıcı vitrini.
+
+    Satıcının aktif ilanları, satış/ilan istatistikleri, ortalama puanı ve
+    aldığı son değerlendirmeler gösterilir.
+    """
+    seller = get_object_or_404(get_user_model(), username=username)
+
+    listings = list(
+        seller.books.filter(is_sold=False)
+        .select_related('category', 'seller')
+        .annotate(fav_count=Count('favorited_by'))
+        .order_by('-created_at')
+    )
+    _mark_new_flag(listings)
+
+    reviews = list(
+        seller.received_reviews
+        .select_related('reviewer', 'order__book')
+        .order_by('-created_at')[:20]
+    )
+
+    user_favorite_ids = set()
+    if request.user.is_authenticated and listings:
+        user_favorite_ids = set(
+            request.user.favorite_books
+            .filter(pk__in=[b.pk for b in listings])
+            .values_list('pk', flat=True)
+        )
+
+    context = {
+        'seller': seller,
+        'listings': listings,
+        'reviews': reviews,
+        'rating': seller_rating(seller),
+        'active_count': len(listings),
+        'sold_count': seller.books.filter(is_sold=True).count(),
+        'user_favorite_ids': user_favorite_ids,
+    }
+    return render(request, 'books/seller_profile.html', context)
+
+
+@login_required
+def review_create(request, order_pk):
+    """Sipariş sahibinin, satıcıya değerlendirme bırakması.
+
+    Yalnızca siparişin alıcısı; her sipariş için tek değerlendirme. Mevcutsa
+    formu düzenleme moduna geçer.
+    """
+    order = get_object_or_404(
+        Order.objects.select_related('book', 'book__seller', 'buyer'),
+        pk=order_pk,
+    )
+    if order.buyer_id != request.user.id:
+        return HttpResponseForbidden('Yalnızca siparişin sahibi değerlendirme yapabilir.')
+
+    existing = Review.objects.filter(order=order).first()
+
+    if request.method == 'POST':
+        form = ReviewForm(request.POST, instance=existing)
+        if form.is_valid():
+            review = form.save(commit=False)
+            review.order = order
+            review.reviewer = request.user
+            review.seller = order.book.seller
+            review.save()
+            messages.success(request, 'Değerlendirmeniz kaydedildi. Teşekkürler!')
+            return redirect('seller_profile', username=order.book.seller.username)
+    else:
+        form = ReviewForm(instance=existing)
+
+    return render(
+        request,
+        'books/review_form.html',
+        {'form': form, 'order': order, 'editing': existing is not None},
     )

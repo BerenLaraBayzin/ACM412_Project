@@ -65,7 +65,10 @@
         </div>
 
         <div class="detail-specs">
-            <div class="spec"><span class="l">Satıcı</span><span class="v">{{ book.seller.username }}</span></div>
+            <div class="spec">
+                <span class="l">Satıcı</span>
+                <span class="v"><a class="seller-link" href="{% url 'seller_profile' book.seller.username %}">{{ book.seller.username }}</a></span>
+            </div>
             <div class="spec"><span class="l">Durum</span><span class="v">{{ book.get_condition_display }}</span></div>
             <div class="spec"><span class="l">Eklenme</span><span class="v">{{ book.created_at|date:"d M Y" }}</span></div>
             {% if book.is_sold and sale %}
@@ -74,6 +77,21 @@
         </div>
 
         <div class="detail-desc">{{ book.description }}</div>
+
+        <a class="seller-card" href="{% url 'seller_profile' book.seller.username %}">
+            <span class="seller-card-avatar">{{ book.seller.username|first|upper }}</span>
+            <span class="seller-card-info">
+                <span class="seller-card-name">{{ book.seller.username }}</span>
+                <span class="seller-card-meta">
+                    {% if seller_rating.count %}
+                        ★ {{ seller_rating.avg|floatformat:1 }} · {{ seller_rating.count }} değerlendirme
+                    {% else %}
+                        Yeni satıcı
+                    {% endif %}
+                </span>
+            </span>
+            <span class="seller-card-go">Profili gör →</span>
+        </a>
     </div>
 </div>
 {% endblock %}

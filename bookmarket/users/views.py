@@ -27,7 +27,7 @@ def profile(request):
     listings = request.user.books.select_related('category').order_by('-created_at')
     purchases = (
         Order.objects.filter(buyer=request.user)
-        .select_related('book')
+        .select_related('book', 'book__seller', 'review')
         .order_by('-ordered_at')
     )
     return render(

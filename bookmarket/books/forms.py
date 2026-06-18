@@ -1,5 +1,5 @@
 from django import forms
-from .models import Book, Message, Order
+from .models import Book, Message, Order, Review
 
 
 class BookForm(forms.ModelForm):
@@ -54,6 +54,23 @@ class MessageForm(forms.ModelForm):
                     'class': 'form-control',
                     'rows': 3,
                     'placeholder': 'Mesajınızı yazın…',
+                }
+            ),
+        }
+
+
+class ReviewForm(forms.ModelForm):
+    class Meta:
+        model = Review
+        fields = ['rating', 'comment']
+        labels = {'rating': 'Puan', 'comment': 'Yorum (opsiyonel)'}
+        widgets = {
+            'rating': forms.Select(attrs={'class': 'form-select'}),
+            'comment': forms.Textarea(
+                attrs={
+                    'class': 'form-control',
+                    'rows': 4,
+                    'placeholder': 'Satıcıyla deneyiminizi birkaç cümleyle anlatın…',
                 }
             ),
         }

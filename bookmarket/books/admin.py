@@ -1,6 +1,6 @@
 from django.contrib import admin
 
-from .models import Book, Category, Message, Order
+from .models import Book, Category, Message, Order, Review
 
 
 @admin.register(Category)
@@ -39,3 +39,13 @@ class MessageAdmin(admin.ModelAdmin):
     search_fields = ('body', 'sender__username', 'receiver__username', 'book__title')
     list_select_related = ('book', 'sender', 'receiver')
     readonly_fields = ('sent_at',)
+
+
+@admin.register(Review)
+class ReviewAdmin(admin.ModelAdmin):
+    list_display = ('seller', 'reviewer', 'rating', 'created_at')
+    list_filter = ('rating', 'created_at')
+    search_fields = ('seller__username', 'reviewer__username', 'comment')
+    list_select_related = ('seller', 'reviewer', 'order')
+    autocomplete_fields = ('order', 'reviewer', 'seller')
+    readonly_fields = ('created_at',)
