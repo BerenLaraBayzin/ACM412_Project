@@ -5,7 +5,7 @@ from django.core.files.uploadedfile import SimpleUploadedFile
 from django.test import Client, TestCase
 from django.urls import reverse
 
-from .models import Book, Category, Message, Order, Review
+from .models import Book, Category, Message, Order, Review, ShipmentEvent
 
 
 TINY_GIF = (
@@ -109,13 +109,22 @@ class BookViewsTests(TestCase):
         self.client.login(username="ali", password="testpass123")
         r = self.client.post(
             reverse("order_create", args=[book.pk]),
-            {"address": "İstanbul Kadıköy"},
+            {
+                "full_name": "Ali Veli",
+                "phone": "05551112233",
+                "city": "İstanbul",
+                "address": "Kadıköy Moda Cad. No:1",
+                "payment_method": "cod",
+            },
             follow=True,
         )
         self.assertEqual(r.status_code, 200)
         book.refresh_from_db()
         self.assertTrue(book.is_sold)
-        self.assertTrue(Order.objects.filter(book=book).exists())
+        order = Order.objects.get(book=book)
+        self.assertEqual(order.status, "preparing")
+        self.assertTrue(order.tracking_number)
+        self.assertTrue(order.events.filter(status="preparing").exists())
 
     def test_cannot_buy_own(self):
         book = Book.objects.create(
@@ -368,3 +377,93 @@ class ReviewTests(TestCase):
     def test_seller_profile_404_for_unknown(self):
         r = self.client.get(reverse("seller_profile", args=["yokboyle"]))
         self.assertEqual(r.status_code, 404)
+
+
+class CheckoutTests(TestCase):
+    def setUp(self):
+        self.seller = User.objects.create_user(username="satici", password="pass12345")
+        self.buyer = User.objects.create_user(username="alici", password="pass12345")
+        self.cat = Category.objects.create(name="Roman", slug="roman")
+        self.book = Book.objects.create(
+            seller=self.seller, category=self.cat, title="Ucuz", author="Y",
+            description="d", price=Decimal("40.00"), condition="good", image=_img(),
+        )
+
+    def _checkout(self, **overrides):
+        data = {
+            "full_name": "Ali Veli", "phone": "05551112233",
+            "city": "İstanbul", "address": "Kadıköy",
+            "payment_method": "card",
+            "card_number": "4242 4242 4242 4242",
+            "card_expiry": "09/27", "card_cvv": "123",
+        }
+        data.update(overrides)
+        return self.client.post(reverse("order_create", args=[self.book.pk]), data)
+
+    def test_card_checkout_charges_shipping_under_threshold(self):
+        self.client.login(username="alici", password="pass12345")
+        self._checkout()
+        order = Order.objects.get(book=self.book)
+        self.assertEqual(order.card_last4, "4242")
+        # 40 ₺ < 150 ₺ eşik → kargo ücreti eklenir
+        self.assertEqual(order.shipping_fee, Decimal(Order.SHIPPING_FEE))
+        self.assertEqual(order.total, Decimal("40.00") + Decimal(Order.SHIPPING_FEE))
+
+    def test_invalid_card_rejected(self):
+        self.client.login(username="alici", password="pass12345")
+        r = self._checkout(card_number="1234 5678 9012 3456")  # Luhn'a uymaz
+        self.assertEqual(r.status_code, 200)  # form tekrar gösterilir
+        self.assertFalse(Order.objects.filter(book=self.book).exists())
+        self.book.refresh_from_db()
+        self.assertFalse(self.book.is_sold)
+
+    def test_free_shipping_over_threshold(self):
+        self.book.price = Decimal("200.00")
+        self.book.save()
+        self.client.login(username="alici", password="pass12345")
+        self._checkout()
+        order = Order.objects.get(book=self.book)
+        self.assertEqual(order.shipping_fee, Decimal("0"))
+
+
+class ShippingFlowTests(TestCase):
+    def setUp(self):
+        self.seller = User.objects.create_user(username="satici", password="pass12345")
+        self.buyer = User.objects.create_user(username="alici", password="pass12345")
+        self.cat = Category.objects.create(name="Roman", slug="roman")
+        self.book = Book.objects.create(
+            seller=self.seller, category=self.cat, title="Kitap", author="Y",
+            description="d", price=Decimal("90.00"), condition="good",
+            image=_img(), is_sold=True,
+        )
+        self.order = Order.objects.create(
+            buyer=self.buyer, book=self.book, address="İstanbul",
+            status="preparing", carrier="Yurtiçi Kargo", tracking_number="YK123",
+        )
+
+    def test_seller_advances_status(self):
+        self.client.login(username="satici", password="pass12345")
+        self.client.post(reverse("order_advance", args=[self.order.pk]))
+        self.order.refresh_from_db()
+        self.assertEqual(self.order.status, "shipped")
+        self.assertIsNotNone(self.order.shipped_at)
+        self.assertTrue(self.order.events.filter(status="shipped").exists())
+
+    def test_buyer_cannot_advance(self):
+        self.client.login(username="alici", password="pass12345")
+        r = self.client.post(reverse("order_advance", args=[self.order.pk]))
+        self.assertEqual(r.status_code, 403)
+        self.order.refresh_from_db()
+        self.assertEqual(self.order.status, "preparing")
+
+    def test_order_detail_visible_to_buyer_and_seller(self):
+        self.client.login(username="alici", password="pass12345")
+        self.assertEqual(self.client.get(reverse("order_detail", args=[self.order.pk])).status_code, 200)
+        self.client.login(username="satici", password="pass12345")
+        self.assertEqual(self.client.get(reverse("order_detail", args=[self.order.pk])).status_code, 200)
+
+    def test_order_detail_hidden_from_strangers(self):
+        User.objects.create_user(username="yabanci", password="pass12345")
+        self.client.login(username="yabanci", password="pass12345")
+        r = self.client.get(reverse("order_detail", args=[self.order.pk]))
+        self.assertEqual(r.status_code, 403)

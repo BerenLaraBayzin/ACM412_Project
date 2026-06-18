@@ -1,0 +1,101 @@
+{% extends 'base.html' %}
+
+{% block title %}Sipariş #{{ order.pk }} — {{ order.book.title }} — BookMarket{% endblock %}
+
+{% block content %}
+<div style="padding-top: 1rem;">
+    <a href="{% url 'profile' %}" style="color: var(--text-muted); font-size: 0.9rem;">← Hesabım</a>
+</div>
+
+<div class="order-page">
+    <div class="order-head">
+        <div>
+            <div class="eyebrow">Sipariş #{{ order.pk }}</div>
+            <h1>{{ order.book.title }}</h1>
+            <div class="sub">{{ order.book.author }} · {{ order.ordered_at|date:"d M Y, H:i" }}</div>
+        </div>
+        <span class="status-badge status-{{ order.status }}">{{ order.get_status_display }}</span>
+    </div>
+
+    {% if order.status != 'cancelled' %}
+    <section class="track-card">
+        <div class="track-head">
+            <div>
+                <div class="track-carrier">{{ order.carrier|default:"Kargo" }}</div>
+                <div class="track-no">Takip No: <strong>{{ order.tracking_number|default:"—" }}</strong></div>
+            </div>
+            {% if order.is_trackable %}<span class="track-live">● Takip aktif</span>{% endif %}
+        </div>
+
+        <ol class="track-steps">
+            {% for step in order.timeline %}
+                <li class="track-step {% if step.done %}is-done{% elif step.current %}is-current{% endif %}">
+                    <span class="dot"></span>
+                    <span class="label">{{ step.label }}</span>
+                </li>
+            {% endfor %}
+        </ol>
+    </section>
+
+    {% if events %}
+    <section class="section">
+        <h2 style="font-size:1.15rem;">Kargo geçmişi</h2>
+        <div class="event-list">
+            {% for e in events %}
+            <div class="event-item">
+                <span class="event-dot status-{{ e.status }}"></span>
+                <div>
+                    <div class="event-status">{{ e.get_status_display }}</div>
+                    {% if e.note %}<div class="event-note">{{ e.note }}</div>{% endif %}
+                    <div class="event-time">{{ e.created_at|date:"d M Y, H:i" }}</div>
+                </div>
+            </div>
+            {% endfor %}
+        </div>
+    </section>
+    {% endif %}
+
+    {% if is_seller and order.status != 'delivered' %}
+    <form method="post" action="{% url 'order_advance' order.pk %}" class="seller-action">
+        {% csrf_token %}
+        <button type="submit" class="btn btn-solid">
+            {% if order.status == 'preparing' %}📦 Kargoya ver
+            {% elif order.status == 'shipped' %}🚚 Dağıtıma çıkar
+            {% elif order.status == 'in_transit' %}✅ Teslim edildi olarak işaretle
+            {% endif %}
+        </button>
+        <span class="seller-action-hint">Satıcı olarak kargo durumunu güncelleyebilirsiniz.</span>
+    </form>
+    {% endif %}
+    {% endif %}
+
+    <div class="order-grid">
+        <section class="order-info-card">
+            <h3 class="checkout-card-title">Teslimat</h3>
+            <div class="kv"><span>Ad Soyad</span><span>{{ order.full_name|default:order.buyer.get_full_name|default:order.buyer.username }}</span></div>
+            {% if order.phone %}<div class="kv"><span>Telefon</span><span>{{ order.phone }}</span></div>{% endif %}
+            {% if order.city %}<div class="kv"><span>Şehir</span><span>{{ order.city }}</span></div>{% endif %}
+            <div class="kv"><span>Adres</span><span>{{ order.address }}</span></div>
+        </section>
+
+        <section class="order-info-card">
+            <h3 class="checkout-card-title">Ödeme</h3>
+            <div class="kv"><span>Yöntem</span><span>{{ order.get_payment_method_display }}</span></div>
+            {% if order.card_last4 %}<div class="kv"><span>Kart</span><span>**** **** **** {{ order.card_last4 }}</span></div>{% endif %}
+            <div class="kv"><span>Ürün</span><span>{{ order.book.price|floatformat:0 }} ₺</span></div>
+            <div class="kv"><span>Kargo</span><span>{% if order.shipping_fee %}{{ order.shipping_fee|floatformat:0 }} ₺{% else %}Ücretsiz{% endif %}</span></div>
+            <div class="kv kv-total"><span>Toplam</span><span>{{ order.total|floatformat:0 }} ₺</span></div>
+        </section>
+    </div>
+
+    {% if is_buyer and order.status == 'delivered' %}
+    <div class="order-cta">
+        {% if has_review %}
+            <a class="btn" href="{% url 'review_create' order.pk %}">Değerlendirmeni düzenle</a>
+        {% else %}
+            <a class="btn btn-solid" href="{% url 'review_create' order.pk %}">★ Satıcıyı değerlendir</a>
+        {% endif %}
+    </div>
+    {% endif %}
+</div>
+{% endblock %}

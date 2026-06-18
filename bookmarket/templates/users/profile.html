@@ -57,19 +57,20 @@
             {% for o in purchases %}
                 <div class="listing-item thread-item">
                     <div class="head">
-                        <a class="title" href="{% url 'book_detail' o.book.pk %}" style="text-decoration:none; color:inherit;">{{ o.book.title }}</a>
-                        <div class="ts">{{ o.ordered_at|date:"d M Y" }}</div>
+                        <a class="title" href="{% url 'order_detail' o.pk %}" style="text-decoration:none; color:inherit;">{{ o.book.title }}</a>
+                        <div class="ts"><span class="status-badge status-{{ o.status }}">{{ o.get_status_display }}</span></div>
                     </div>
-                    <div class="other">{{ o.book.author }} · {{ o.book.price|floatformat:0 }} ₺ · Satıcı: {{ o.book.seller.username }}</div>
+                    <div class="other">{{ o.book.author }} · {{ o.total|floatformat:0 }} ₺ · Satıcı: {{ o.book.seller.username }} · {{ o.ordered_at|date:"d M Y" }}</div>
                     <div class="purchase-review">
+                        <a class="btn btn-sm" href="{% url 'order_detail' o.pk %}">📦 Siparişi takip et</a>
                         {% if o.review %}
                             <span class="review-done">
                                 {% include 'books/_stars.html' with value=o.review.rating %}
                                 Değerlendirildi
                             </span>
                             <a class="review-edit" href="{% url 'review_create' o.pk %}">Düzenle</a>
-                        {% else %}
-                            <a class="btn btn-sm" href="{% url 'review_create' o.pk %}">★ Satıcıyı değerlendir</a>
+                        {% elif o.status == 'delivered' %}
+                            <a class="review-edit" href="{% url 'review_create' o.pk %}">★ Satıcıyı değerlendir</a>
                         {% endif %}
                     </div>
                 </div>
@@ -77,6 +78,41 @@
         </div>
     {% else %}
         <p class="text-muted" style="color: var(--text-muted);">Henüz bir kitap satın almadın.</p>
+    {% endif %}
+
+    <div class="section-head" style="margin-top: 3rem;">
+        <div>
+            <h2>Satışlarım</h2>
+            <div class="sub">{{ sales|length }} sipariş · kargoyu buradan yönet</div>
+        </div>
+    </div>
+    {% if sales %}
+        <div style="margin-bottom: 3rem;">
+            {% for o in sales %}
+                <div class="listing-item thread-item">
+                    <div class="head">
+                        <a class="title" href="{% url 'order_detail' o.pk %}" style="text-decoration:none; color:inherit;">{{ o.book.title }}</a>
+                        <div class="ts"><span class="status-badge status-{{ o.status }}">{{ o.get_status_display }}</span></div>
+                    </div>
+                    <div class="other">Alıcı: {{ o.buyer.username }} · {{ o.total|floatformat:0 }} ₺ · {{ o.ordered_at|date:"d M Y" }}</div>
+                    <div class="purchase-review">
+                        {% if o.status != 'delivered' and o.status != 'cancelled' %}
+                            <form method="post" action="{% url 'order_advance' o.pk %}" style="margin:0;">
+                                {% csrf_token %}
+                                <button type="submit" class="btn btn-sm">
+                                    {% if o.status == 'preparing' %}📦 Kargoya ver
+                                    {% elif o.status == 'shipped' %}🚚 Dağıtıma çıkar
+                                    {% else %}✅ Teslim edildi{% endif %}
+                                </button>
+                            </form>
+                        {% endif %}
+                        <a class="review-edit" href="{% url 'order_detail' o.pk %}">Detay</a>
+                    </div>
+                </div>
+            {% endfor %}
+        </div>
+    {% else %}
+        <p class="text-muted" style="color: var(--text-muted);">Henüz bir satışın yok.</p>
     {% endif %}
 </div>
 {% endblock %}

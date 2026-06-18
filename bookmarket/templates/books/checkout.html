@@ -1,0 +1,107 @@
+{% extends 'base.html' %}
+
+{% block title %}Ödeme — {{ book.title }} — BookMarket{% endblock %}
+
+{% block content %}
+<div style="padding-top: 1rem;">
+    <a href="{% url 'book_detail' book.pk %}" style="color: var(--text-muted); font-size: 0.9rem;">← İlana dön</a>
+</div>
+
+<form method="post" class="checkout">
+    {% csrf_token %}
+
+    <div class="checkout-main">
+        <div class="form-header" style="text-align:left; margin-bottom:1.5rem;">
+            <div class="eyebrow">Güvenli Ödeme</div>
+            <h1>Siparişi tamamla</h1>
+        </div>
+
+        {% if form.non_field_errors %}
+            <div class="alert alert-danger">{{ form.non_field_errors }}</div>
+        {% endif %}
+
+        <section class="checkout-card">
+            <h3 class="checkout-card-title">1 · Teslimat bilgileri</h3>
+            <div class="field">
+                <label class="field-label" for="{{ form.full_name.id_for_label }}">{{ form.full_name.label }}</label>
+                {{ form.full_name }}
+                {% for e in form.full_name.errors %}<div class="field-error">{{ e }}</div>{% endfor %}
+            </div>
+            <div class="field-row">
+                <div class="field">
+                    <label class="field-label" for="{{ form.phone.id_for_label }}">{{ form.phone.label }}</label>
+                    {{ form.phone }}
+                    {% for e in form.phone.errors %}<div class="field-error">{{ e }}</div>{% endfor %}
+                </div>
+                <div class="field">
+                    <label class="field-label" for="{{ form.city.id_for_label }}">{{ form.city.label }}</label>
+                    {{ form.city }}
+                    {% for e in form.city.errors %}<div class="field-error">{{ e }}</div>{% endfor %}
+                </div>
+            </div>
+            <div class="field">
+                <label class="field-label" for="{{ form.address.id_for_label }}">{{ form.address.label }}</label>
+                {{ form.address }}
+                {% for e in form.address.errors %}<div class="field-error">{{ e }}</div>{% endfor %}
+            </div>
+        </section>
+
+        <section class="checkout-card">
+            <h3 class="checkout-card-title">2 · Ödeme yöntemi</h3>
+            <div class="pay-options" data-pay-options>
+                {% for radio in form.payment_method %}
+                    <label class="pay-option">
+                        {{ radio.tag }}
+                        <span class="pay-option-label">{{ radio.choice_label }}</span>
+                    </label>
+                {% endfor %}
+            </div>
+
+            <div class="card-fields" data-card-fields>
+                <div class="field">
+                    <label class="field-label" for="{{ form.card_number.id_for_label }}">{{ form.card_number.label }}</label>
+                    {{ form.card_number }}
+                    {% for e in form.card_number.errors %}<div class="field-error">{{ e }}</div>{% endfor %}
+                </div>
+                <div class="field-row">
+                    <div class="field">
+                        <label class="field-label" for="{{ form.card_expiry.id_for_label }}">{{ form.card_expiry.label }}</label>
+                        {{ form.card_expiry }}
+                        {% for e in form.card_expiry.errors %}<div class="field-error">{{ e }}</div>{% endfor %}
+                    </div>
+                    <div class="field">
+                        <label class="field-label" for="{{ form.card_cvv.id_for_label }}">{{ form.card_cvv.label }}</label>
+                        {{ form.card_cvv }}
+                        {% for e in form.card_cvv.errors %}<div class="field-error">{{ e }}</div>{% endfor %}
+                    </div>
+                </div>
+                <p class="pay-note">🔒 Test ortamı — gerçek kart bilgisi girmeyin. Numara yalnızca biçim/Luhn olarak doğrulanır, saklanmaz. Örn: 4242 4242 4242 4242</p>
+            </div>
+        </section>
+    </div>
+
+    <aside class="checkout-summary">
+        <div class="summary-card">
+            <h3 class="checkout-card-title">Sipariş özeti</h3>
+            <div class="summary-book">
+                <div class="summary-cover">
+                    {% if book.image %}<img src="{{ book.image.url }}" alt="{{ book.title }}">{% endif %}
+                </div>
+                <div>
+                    <div class="summary-book-title">{{ book.title }}</div>
+                    <div class="summary-book-author">{{ book.author }}</div>
+                    <div class="summary-book-seller">Satıcı: {{ book.seller.username }}</div>
+                </div>
+            </div>
+            <div class="summary-line"><span>Ürün</span><span>{{ book.price|floatformat:0 }} ₺</span></div>
+            <div class="summary-line">
+                <span>Kargo</span>
+                <span>{% if free_shipping %}<span class="free-ship">Ücretsiz</span>{% else %}{{ shipping_fee|floatformat:0 }} ₺{% endif %}</span>
+            </div>
+            <div class="summary-total"><span>Toplam</span><span>{{ total|floatformat:0 }} ₺</span></div>
+            <button type="submit" class="btn btn-solid btn-block">Ödemeyi tamamla · {{ total|floatformat:0 }} ₺</button>
+            <p class="summary-secure">150 ₺ ve üzeri siparişlerde kargo ücretsiz.</p>
+        </div>
+    </aside>
+</form>
+{% endblock %}

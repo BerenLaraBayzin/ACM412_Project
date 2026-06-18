@@ -2,8 +2,10 @@
 
 REST API uçları için bkz: ``books.api_views``.
 """
+import random
 from collections import OrderedDict
 from datetime import timedelta
+from decimal import Decimal
 
 from django.contrib import messages
 from django.contrib.auth import get_user_model
@@ -16,8 +18,8 @@ from django.shortcuts import get_object_or_404, redirect, render
 from django.utils import timezone
 from django.views.decorators.http import require_POST
 
-from .forms import BookForm, MessageForm, OrderPurchaseForm, ReviewForm
-from .models import Book, Category, Message, Order, Review
+from .forms import BookForm, CheckoutForm, MessageForm, ReviewForm
+from .models import Book, Category, Message, Order, Profile, Review, ShipmentEvent
 
 
 # Sıralama seçenekleri: arayüzdeki değer -> (etiket, ORM order_by ifadesi)
@@ -451,13 +453,28 @@ def book_delete(request, pk):
     return render(request, 'books/book_confirm_delete.html', {'book': book})
 
 
+def _shipping_fee_for(price):
+    """Ücretsiz kargo eşiğinin altındaki siparişlere sabit kargo ücreti."""
+    if price >= Order.FREE_SHIPPING_THRESHOLD:
+        return Decimal('0')
+    return Decimal(Order.SHIPPING_FEE)
+
+
+def _assign_tracking(order):
+    """Siparişe rastgele bir kargo firması ve takip numarası ata."""
+    carrier_name, prefix = random.choice(Order.CARRIERS)
+    order.carrier = carrier_name
+    order.tracking_number = prefix + ''.join(random.choices('0123456789', k=11))
+
+
 @login_required
 def order_create(request, pk):
-    """Satın alma akışı.
+    """Ödeme + sipariş oluşturma (checkout).
 
     Yarış-koşulu güvenliği: ``transaction.atomic`` içinde
     ``Book.objects.select_for_update()`` ile kilitlenir; iki paralel satın alma
-    isteğinden yalnızca biri başarılı olur.
+    isteğinden yalnızca biri başarılı olur. Ödeme (mock) Luhn doğrulamasından
+    geçer; kart numarası saklanmaz, yalnızca son 4 hane tutulur.
     """
     book = get_object_or_404(
         Book.objects.select_related('seller'),
@@ -469,8 +486,10 @@ def order_create(request, pk):
         messages.error(request, 'Bu kitap satılmış veya satışta değil.')
         return redirect('book_detail', pk=book.pk)
 
+    shipping_fee = _shipping_fee_for(book.price)
+
     if request.method == 'POST':
-        form = OrderPurchaseForm(request.POST)
+        form = CheckoutForm(request.POST)
         if form.is_valid():
             try:
                 with transaction.atomic():
@@ -485,24 +504,102 @@ def order_create(request, pk):
                     order = form.save(commit=False)
                     order.buyer = request.user
                     order.book = locked
+                    order.shipping_fee = shipping_fee
+                    order.card_last4 = form.card_last4
+                    order.status = 'preparing'
+                    _assign_tracking(order)
                     order.save()
                     locked.is_sold = True
                     locked.save(update_fields=['is_sold'])
+                    ShipmentEvent.objects.create(
+                        order=order, status='preparing',
+                        note='Siparişiniz alındı, satıcı hazırlıyor.',
+                    )
+                    Profile.objects.update_or_create(
+                        user=request.user,
+                        defaults={'phone': order.phone, 'city': order.city,
+                                  'address': order.address},
+                    )
             except Book.DoesNotExist:
                 messages.error(request, 'İlan bulunamadı.')
                 return redirect('book_list')
-            messages.success(
-                request,
-                'Siparişiniz alındı. Satıcı teslimat için sizinle iletişime geçebilir.',
-            )
-            return redirect('book_detail', pk=book.pk)
+            if order.payment_method == 'card':
+                messages.success(request, 'Ödemeniz alındı, siparişiniz oluşturuldu! 🎉')
+            else:
+                messages.success(request, 'Siparişiniz oluşturuldu — kapıda ödeme seçildi.')
+            return redirect('order_detail', pk=order.pk)
     else:
-        form = OrderPurchaseForm()
+        initial = {'full_name': request.user.get_full_name()}
+        profile = Profile.objects.filter(user=request.user).first()
+        if profile:
+            initial.update(phone=profile.phone, city=profile.city, address=profile.address)
+        form = CheckoutForm(initial=initial)
+
     return render(
         request,
-        'books/order_form.html',
-        {'form': form, 'book': book},
+        'books/checkout.html',
+        {
+            'form': form,
+            'book': book,
+            'shipping_fee': shipping_fee,
+            'free_shipping': shipping_fee == 0,
+            'total': book.price + shipping_fee,
+        },
     )
+
+
+@login_required
+def order_detail(request, pk):
+    """Sipariş özeti + kargo takip zaman çizelgesi (alıcı veya satıcı görür)."""
+    order = get_object_or_404(
+        Order.objects.select_related('book', 'book__seller', 'buyer'),
+        pk=pk,
+    )
+    if request.user.id not in (order.buyer_id, order.book.seller_id):
+        return HttpResponseForbidden('Bu siparişi görüntüleme yetkiniz yok.')
+    return render(request, 'books/order_detail.html', {
+        'order': order,
+        'events': list(order.events.all()),
+        'is_seller': request.user.id == order.book.seller_id,
+        'is_buyer': request.user.id == order.buyer_id,
+        'has_review': Review.objects.filter(order=order).exists(),
+    })
+
+
+@login_required
+@require_POST
+def order_advance(request, pk):
+    """Satıcı, siparişi kargo akışında bir sonraki adıma taşır.
+
+    hazırlanıyor → kargoya verildi → dağıtımda → teslim edildi.
+    Her adım bir ``ShipmentEvent`` olarak kaydedilir.
+    """
+    order = get_object_or_404(Order.objects.select_related('book'), pk=pk)
+    if request.user.id != order.book.seller_id:
+        return HttpResponseForbidden('Kargo durumunu yalnızca satıcı güncelleyebilir.')
+
+    flow = Order.STATUS_FLOW
+    if order.status not in flow or flow.index(order.status) >= len(flow) - 1:
+        messages.info(request, 'Sipariş zaten teslim edilmiş durumda.')
+        return redirect('order_detail', pk=order.pk)
+
+    next_status = flow[flow.index(order.status) + 1]
+    notes = {
+        'shipped': f'{order.carrier} ile kargoya verildi. Takip no: {order.tracking_number}',
+        'in_transit': 'Gönderi dağıtım şubesinde, kuryeye verildi.',
+        'delivered': 'Gönderi alıcıya teslim edildi.',
+    }
+    order.status = next_status
+    if next_status == 'shipped':
+        order.shipped_at = timezone.now()
+    elif next_status == 'delivered':
+        order.delivered_at = timezone.now()
+    order.save(update_fields=['status', 'shipped_at', 'delivered_at'])
+    ShipmentEvent.objects.create(
+        order=order, status=next_status, note=notes.get(next_status, ''),
+    )
+    messages.success(request, f'Kargo durumu güncellendi: {order.get_status_display()}')
+    return redirect('order_detail', pk=order.pk)
 
 
 def _thread_allowed(user, book, with_user):

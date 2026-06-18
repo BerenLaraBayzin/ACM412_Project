@@ -79,17 +79,126 @@ class Message(models.Model):
         return f"From {self.sender} to {self.receiver} about {self.book.title}"
 
 class Order(models.Model):
+    """Bir kitabın satın alma kaydı: teslimat, ödeme ve kargo bilgileri.
+
+    Sipariş yaşam döngüsü ``status`` ile izlenir:
+    hazırlanıyor → kargoya verildi → dağıtımda → teslim edildi.
+    Her durum değişikliği ayrıca ``ShipmentEvent`` olarak kaydedilir
+    (kargo takip ekranındaki zaman çizelgesi).
+    """
+    PAYMENT_CHOICES = [
+        ('card', 'Kredi/Banka Kartı'),
+        ('cod', 'Kapıda Ödeme'),
+    ]
+    STATUS_CHOICES = [
+        ('preparing', 'Hazırlanıyor'),
+        ('shipped', 'Kargoya verildi'),
+        ('in_transit', 'Dağıtımda'),
+        ('delivered', 'Teslim edildi'),
+        ('cancelled', 'İptal edildi'),
+    ]
+    # Sıralı akış — zaman çizelgesinde tamamlanmış adımları işaretlemek için.
+    STATUS_FLOW = ['preparing', 'shipped', 'in_transit', 'delivered']
+    CARRIERS = [
+        ('Yurtiçi Kargo', 'YK'),
+        ('Aras Kargo', 'AK'),
+        ('MNG Kargo', 'MNG'),
+        ('PTT Kargo', 'PTT'),
+        ('Sürat Kargo', 'SK'),
+    ]
+    FREE_SHIPPING_THRESHOLD = 150
+    SHIPPING_FEE = 39
+
     buyer = models.ForeignKey(
         User, on_delete=models.CASCADE, related_name='purchases'
     )
     book = models.OneToOneField(
         Book, on_delete=models.CASCADE, related_name='sale_order'
     )
+    # Teslimat bilgileri
+    full_name = models.CharField(max_length=120, blank=True, default='')
+    phone = models.CharField(max_length=20, blank=True, default='')
+    city = models.CharField(max_length=80, blank=True, default='')
     address = models.TextField()
+    # Ödeme
+    payment_method = models.CharField(
+        max_length=10, choices=PAYMENT_CHOICES, default='card'
+    )
+    card_last4 = models.CharField(max_length=4, blank=True, default='')
+    shipping_fee = models.DecimalField(
+        max_digits=8, decimal_places=2, default=0
+    )
+    # Kargo / durum
+    status = models.CharField(
+        max_length=12, choices=STATUS_CHOICES, default='preparing'
+    )
+    carrier = models.CharField(max_length=40, blank=True, default='')
+    tracking_number = models.CharField(max_length=30, blank=True, default='')
     ordered_at = models.DateTimeField(auto_now_add=True)
+    shipped_at = models.DateTimeField(null=True, blank=True)
+    delivered_at = models.DateTimeField(null=True, blank=True)
+
+    class Meta:
+        ordering = ['-ordered_at']
 
     def __str__(self):
         return f"Order: {self.book.title} by {self.buyer.username}"
+
+    @property
+    def total(self):
+        return self.book.price + self.shipping_fee
+
+    @property
+    def is_trackable(self):
+        return self.status in ('shipped', 'in_transit', 'delivered')
+
+    @property
+    def timeline(self):
+        """Zaman çizelgesi için adım listesi: her adım done/current/future."""
+        if self.status == 'cancelled':
+            return []
+        try:
+            current_index = self.STATUS_FLOW.index(self.status)
+        except ValueError:
+            current_index = 0
+        steps = []
+        for idx, key in enumerate(self.STATUS_FLOW):
+            steps.append({
+                'key': key,
+                'label': dict(self.STATUS_CHOICES)[key],
+                'done': idx < current_index,
+                'current': idx == current_index,
+            })
+        return steps
+
+
+class ShipmentEvent(models.Model):
+    """Bir siparişin kargo geçmişindeki tekil durum kaydı (takip ekranı)."""
+    order = models.ForeignKey(
+        Order, on_delete=models.CASCADE, related_name='events'
+    )
+    status = models.CharField(max_length=12, choices=Order.STATUS_CHOICES)
+    note = models.CharField(max_length=200, blank=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        ordering = ['created_at']
+
+    def __str__(self):
+        return f"{self.order_id}: {self.get_status_display()}"
+
+
+class Profile(models.Model):
+    """Kullanıcının iletişim/teslimat bilgileri — ödeme ekranında ön doldurulur."""
+    user = models.OneToOneField(
+        User, on_delete=models.CASCADE, related_name='profile'
+    )
+    phone = models.CharField(max_length=20, blank=True, default='')
+    city = models.CharField(max_length=80, blank=True, default='')
+    address = models.TextField(blank=True, default='')
+
+    def __str__(self):
+        return f"Profil: {self.user.username}"
 
 
 class Review(models.Model):

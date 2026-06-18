@@ -145,6 +145,38 @@
     });
   }
 
+  // Checkout — ödeme yöntemine göre kart alanlarını göster/gizle
+  const payOptions = document.querySelector('[data-pay-options]');
+  const cardFields = document.querySelector('[data-card-fields]');
+  if (payOptions && cardFields) {
+    const sync = function () {
+      const sel = payOptions.querySelector('input[name="payment_method"]:checked');
+      const isCard = !sel || sel.value === 'card';
+      cardFields.style.display = isCard ? '' : 'none';
+    };
+    payOptions.addEventListener('change', sync);
+    sync();
+  }
+
+  // Kart numarasını 4'lü gruplara ayır (görsel)
+  const cardNumber = document.getElementById('id_card_number');
+  if (cardNumber) {
+    cardNumber.addEventListener('input', function () {
+      let v = cardNumber.value.replace(/\D/g, '').slice(0, 19);
+      cardNumber.value = v.replace(/(.{4})/g, '$1 ').trim();
+    });
+  }
+
+  // Son kullanma tarihine otomatik "/" ekle
+  const cardExpiry = document.getElementById('id_card_expiry');
+  if (cardExpiry) {
+    cardExpiry.addEventListener('input', function () {
+      let v = cardExpiry.value.replace(/\D/g, '').slice(0, 4);
+      if (v.length >= 3) v = v.slice(0, 2) + '/' + v.slice(2);
+      cardExpiry.value = v;
+    });
+  }
+
   const form = document.querySelector('form[data-ajax-message]');
   if (form) {
     const list = document.querySelector('[data-thread-messages]');

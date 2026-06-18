@@ -30,8 +30,13 @@ def profile(request):
         .select_related('book', 'book__seller', 'review')
         .order_by('-ordered_at')
     )
+    sales = (
+        Order.objects.filter(book__seller=request.user)
+        .select_related('book', 'buyer')
+        .order_by('-ordered_at')
+    )
     return render(
         request,
         'users/profile.html',
-        {'listings': listings, 'purchases': purchases},
+        {'listings': listings, 'purchases': purchases, 'sales': sales},
     )

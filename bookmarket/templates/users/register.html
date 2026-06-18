@@ -7,24 +7,70 @@
     <div class="form-header">
         <div class="eyebrow">Topluluğa Katıl</div>
         <h1>Aramıza hoş geldin.</h1>
-        <p>Kitaplarını sat, başkalarınınkini keşfet.</p>
+        <p>Birkaç saniyede hesabını oluştur; kitaplarını sat, başkalarınınkini keşfet.</p>
     </div>
 
     <div class="form-card">
-        <form method="post">
+        <form method="post" novalidate>
             {% csrf_token %}
-            {% for field in form %}
+            {% if form.non_field_errors %}
+                <div class="alert alert-danger">{{ form.non_field_errors }}</div>
+            {% endif %}
+
+            <div class="field-row">
                 <div class="field">
-                    <label class="field-label" for="{{ field.id_for_label }}">{{ field.label }}</label>
-                    {{ field }}
-                    {% if field.help_text %}<div class="field-help">{{ field.help_text|safe }}</div>{% endif %}
-                    {% for error in field.errors %}
-                        <div class="field-error">{{ error }}</div>
-                    {% endfor %}
+                    <label class="field-label" for="{{ form.first_name.id_for_label }}">{{ form.first_name.label }}</label>
+                    {{ form.first_name }}
+                    {% for e in form.first_name.errors %}<div class="field-error">{{ e }}</div>{% endfor %}
                 </div>
-            {% endfor %}
+                <div class="field">
+                    <label class="field-label" for="{{ form.last_name.id_for_label }}">{{ form.last_name.label }}</label>
+                    {{ form.last_name }}
+                    {% for e in form.last_name.errors %}<div class="field-error">{{ e }}</div>{% endfor %}
+                </div>
+            </div>
+
+            <div class="field">
+                <label class="field-label" for="{{ form.username.id_for_label }}">Kullanıcı adı</label>
+                {{ form.username }}
+                {% if form.username.help_text %}<div class="field-help">{{ form.username.help_text|safe }}</div>{% endif %}
+                {% for e in form.username.errors %}<div class="field-error">{{ e }}</div>{% endfor %}
+            </div>
+
+            <div class="field">
+                <label class="field-label" for="{{ form.email.id_for_label }}">{{ form.email.label }}</label>
+                {{ form.email }}
+                {% for e in form.email.errors %}<div class="field-error">{{ e }}</div>{% endfor %}
+            </div>
+
+            <div class="field-row">
+                <div class="field">
+                    <label class="field-label" for="{{ form.phone.id_for_label }}">{{ form.phone.label }}</label>
+                    {{ form.phone }}
+                    {% for e in form.phone.errors %}<div class="field-error">{{ e }}</div>{% endfor %}
+                </div>
+                <div class="field">
+                    <label class="field-label" for="{{ form.city.id_for_label }}">{{ form.city.label }}</label>
+                    {{ form.city }}
+                    {% for e in form.city.errors %}<div class="field-error">{{ e }}</div>{% endfor %}
+                </div>
+            </div>
+
+            <div class="field">
+                <label class="field-label" for="{{ form.password1.id_for_label }}">Şifre</label>
+                {{ form.password1 }}
+                {% if form.password1.help_text %}<div class="field-help">{{ form.password1.help_text|safe }}</div>{% endif %}
+                {% for e in form.password1.errors %}<div class="field-error">{{ e }}</div>{% endfor %}
+            </div>
+
+            <div class="field">
+                <label class="field-label" for="{{ form.password2.id_for_label }}">Şifre (tekrar)</label>
+                {{ form.password2 }}
+                {% for e in form.password2.errors %}<div class="field-error">{{ e }}</div>{% endfor %}
+            </div>
+
             <div class="form-actions">
-                <button type="submit" class="btn btn-solid">Hesap Oluştur</button>
+                <button type="submit" class="btn btn-solid btn-block">Hesap Oluştur</button>
             </div>
         </form>
     </div>

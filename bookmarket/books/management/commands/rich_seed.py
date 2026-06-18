@@ -28,7 +28,9 @@ from django.core.management.base import BaseCommand
 from django.db import transaction
 from django.utils import timezone
 
-from books.models import Book, Category, Message, Order, Review
+from books.models import (
+    Book, Category, Message, Order, Profile, Review, ShipmentEvent,
+)
 
 
 CATEGORIES = [
@@ -359,6 +361,12 @@ DEMO_USERS = [
 DEMO_PASSWORD = "kitap1234"
 
 
+DEMO_CITIES = [
+    "İstanbul", "Ankara", "İzmir", "Bursa", "Antalya",
+    "Konya", "Adana", "Eskişehir", "Trabzon", "Kayseri",
+]
+
+
 # Gerçekçi teslimat adresleri (sipariş senaryosu için).
 DEMO_ADDRESSES = [
     "Bağlarbaşı Mah. Atatürk Cad. No:14 D:5, Maltepe / İstanbul",
@@ -518,6 +526,44 @@ class Command(BaseCommand):
             help="Open Library'den kapak indirme (offline mod).",
         )
 
+    def _build_shipment_history(self, order, ordered_at, now):
+        """Siparişin mevcut durumuna kadar olan kargo olaylarını tarihli üretir.
+
+        Her adım (hazırlanıyor → kargoya verildi → dağıtımda → teslim edildi)
+        bir ``ShipmentEvent`` olur; ``shipped_at``/``delivered_at`` de doldurulur.
+        """
+        flow = Order.STATUS_FLOW
+        target = flow.index(order.status) if order.status in flow else 0
+        notes = {
+            "preparing": "Siparişiniz alındı, satıcı hazırlıyor.",
+            "shipped": f"{order.carrier} ile kargoya verildi. Takip no: {order.tracking_number}",
+            "in_transit": "Gönderi dağıtım şubesinde, kuryeye verildi.",
+            "delivered": "Gönderi alıcıya teslim edildi.",
+        }
+        t = ordered_at
+        shipped_at = delivered_at = None
+        for idx in range(target + 1):
+            key = flow[idx]
+            if idx == 0:
+                t = ordered_at + timedelta(hours=random.randint(1, 8))
+            else:
+                t = t + timedelta(days=random.randint(1, 3), hours=random.randint(0, 12))
+            if t > now:
+                t = now - timedelta(hours=random.randint(1, 6))
+            event = ShipmentEvent.objects.create(
+                order=order, status=key, note=notes.get(key, ""),
+            )
+            ShipmentEvent.objects.filter(pk=event.pk).update(created_at=t)
+            if key == "shipped":
+                shipped_at = t
+            elif key == "delivered":
+                delivered_at = t
+        order.shipped_at = shipped_at
+        order.delivered_at = delivered_at
+        Order.objects.filter(pk=order.pk).update(
+            shipped_at=shipped_at, delivered_at=delivered_at,
+        )
+
     def handle(self, *args, **options):
         keep = options["keep"]
         skip_covers = options["no_covers"]
@@ -554,6 +600,13 @@ class Command(BaseCommand):
             if created:
                 user.set_password(DEMO_PASSWORD)
                 user.save()
+            Profile.objects.update_or_create(
+                user=user,
+                defaults={
+                    "phone": "05" + "".join(random.choices("0123456789", k=9)),
+                    "city": random.choice(DEMO_CITIES),
+                },
+            )
             users.append(user)
         self.stdout.write(self.style.SUCCESS(
             f"{len(users)} satıcı/kullanıcı hazır (ortak şifre: {DEMO_PASSWORD})."
@@ -621,11 +674,15 @@ class Command(BaseCommand):
             ))
             return
 
-        # Senaryo: kitapların bir kısmı geçmişte satılmış olsun.
-        # Sipariş tarihi ilanın yayın tarihinden sonra, gerçekçi bir adresle.
+        # Senaryo: kitapların bir kısmı geçmişte satılmış olsun — ödeme
+        # yöntemi, kargo firması/takip no ve gerçekçi bir kargo durumu ile.
         sold_orders = []
+        # Durum dağılımı: çoğu teslim edilmiş, bir kısmı hâlâ yolda.
+        status_pool = (
+            ["delivered"] * 6 + ["in_transit"] * 2 + ["shipped"] * 2 + ["preparing"]
+        )
         sold_sample = random.sample(
-            created_books, k=min(28, len(created_books))
+            created_books, k=min(34, len(created_books))
         )
         for book in sold_sample:
             buyer = random.choice([u for u in users if u.id != book.seller_id])
@@ -635,30 +692,48 @@ class Command(BaseCommand):
                 days=random.randint(1, span_days),
                 hours=random.randint(0, 23),
             )
-            if ordered_at > now:
-                ordered_at = now - timedelta(hours=random.randint(1, 12))
+            if ordered_at > now - timedelta(days=1):
+                ordered_at = now - timedelta(days=random.randint(1, 5))
+            payment = "card" if random.random() < 0.8 else "cod"
+            fee = (
+                Decimal("0") if book.price >= Order.FREE_SHIPPING_THRESHOLD
+                else Decimal(Order.SHIPPING_FEE)
+            )
+            carrier_name, prefix = random.choice(Order.CARRIERS)
+            tracking = prefix + "".join(random.choices("0123456789", k=11))
+            status = random.choice(status_pool)
             with transaction.atomic():
                 locked = Book.objects.select_for_update().get(pk=book.pk)
                 if locked.is_sold or Order.objects.filter(book=locked).exists():
                     continue
                 order = Order.objects.create(
                     buyer=buyer, book=locked,
+                    full_name=buyer.get_full_name() or buyer.username,
+                    phone="05" + "".join(random.choices("0123456789", k=9)),
+                    city=random.choice(DEMO_CITIES),
                     address=random.choice(DEMO_ADDRESSES),
+                    payment_method=payment,
+                    card_last4=("".join(random.choices("0123456789", k=4)) if payment == "card" else ""),
+                    shipping_fee=fee,
+                    status=status,
+                    carrier=carrier_name,
+                    tracking_number=tracking,
                 )
-                Order.objects.filter(pk=order.pk).update(ordered_at=ordered_at)
-                order.ordered_at = ordered_at
                 locked.is_sold = True
                 locked.save(update_fields=["is_sold"])
-                sold_orders.append(order)
+            Order.objects.filter(pk=order.pk).update(ordered_at=ordered_at)
+            order.ordered_at = ordered_at
+            self._build_shipment_history(order, ordered_at, now)
+            sold_orders.append(order)
         self.stdout.write(self.style.SUCCESS(
-            f"{len(sold_orders)} sipariş oluşturuldu (satılmış ilanlar)."
+            f"{len(sold_orders)} sipariş oluşturuldu (ödeme + kargo durumlarıyla)."
         ))
 
-        # Satıcı değerlendirmeleri — siparişlerin çoğuna çeşitli puanlı yorum.
-        # Yorum tarihi siparişten birkaç gün sonrasına denk gelir.
+        # Satıcı değerlendirmeleri — yalnızca teslim edilmiş siparişlere,
+        # teslimattan birkaç gün sonra çeşitli puanlı yorumlar.
         reviewed = 0
         for order in sold_orders:
-            if random.random() < 0.8:
+            if order.status == "delivered" and random.random() < 0.85:
                 rating, comment = random.choice(REVIEW_SAMPLES)
                 review = Review.objects.create(
                     order=order,
@@ -667,8 +742,9 @@ class Command(BaseCommand):
                     rating=rating,
                     comment=comment,
                 )
-                review_at = order.ordered_at + timedelta(
-                    days=random.randint(2, 16), hours=random.randint(0, 23)
+                base = order.delivered_at or order.ordered_at
+                review_at = base + timedelta(
+                    days=random.randint(1, 8), hours=random.randint(0, 23)
                 )
                 if review_at > now:
                     review_at = now - timedelta(hours=random.randint(1, 6))
