@@ -97,5 +97,13 @@
         {% endif %}
     </div>
     {% endif %}
+
+    {% if order.status == 'preparing' %}
+    <form method="post" action="{% url 'order_cancel' order.pk %}" class="order-cancel"
+          onsubmit="return confirm('Sipariş iptal edilsin mi? Kitap yeniden satışa açılacak.');">
+        {% csrf_token %}
+        <button type="submit" class="btn btn-ghost-danger">Siparişi iptal et</button>
+    </form>
+    {% endif %}
 </div>
 {% endblock %}

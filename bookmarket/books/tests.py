@@ -467,3 +467,59 @@ class ShippingFlowTests(TestCase):
         self.client.login(username="yabanci", password="pass12345")
         r = self.client.get(reverse("order_detail", args=[self.order.pk]))
         self.assertEqual(r.status_code, 403)
+
+    def test_cancel_while_preparing_frees_book(self):
+        self.client.login(username="alici", password="pass12345")
+        r = self.client.post(reverse("order_cancel", args=[self.order.pk]), follow=True)
+        self.assertEqual(r.status_code, 200)
+        self.book.refresh_from_db()
+        self.assertFalse(self.book.is_sold)
+        self.assertFalse(Order.objects.filter(pk=self.order.pk).exists())
+
+    def test_cannot_cancel_after_shipped(self):
+        self.order.status = "shipped"
+        self.order.save()
+        self.client.login(username="alici", password="pass12345")
+        self.client.post(reverse("order_cancel", args=[self.order.pk]))
+        self.assertTrue(Order.objects.filter(pk=self.order.pk).exists())
+
+
+class ExtraFeatureTests(TestCase):
+    def setUp(self):
+        self.user = User.objects.create_user(
+            username="ali", password="testpass123", email="ali@x.com",
+        )
+        self.seller = User.objects.create_user(username="veli", password="pass12345")
+        self.cat = Category.objects.create(name="Roman", slug="roman")
+        self.book = Book.objects.create(
+            seller=self.seller, category=self.cat, title="Kitap", author="Y",
+            description="d", price=Decimal("50"), condition="good", image=_img(),
+        )
+
+    def test_detail_increments_views(self):
+        start = self.book.views_count
+        self.client.get(reverse("book_detail", args=[self.book.pk]))
+        self.book.refresh_from_db()
+        self.assertEqual(self.book.views_count, start + 1)
+
+    def test_owner_view_not_counted(self):
+        self.client.login(username="veli", password="pass12345")
+        self.client.get(reverse("book_detail", args=[self.book.pk]))
+        self.book.refresh_from_db()
+        self.assertEqual(self.book.views_count, 0)
+
+    def test_profile_edit_updates_user_and_profile(self):
+        self.client.login(username="ali", password="testpass123")
+        r = self.client.post(reverse("profile_edit"), {
+            "first_name": "Ali", "last_name": "Veli", "email": "yeni@x.com",
+            "phone": "05559998877", "city": "İzmir", "address": "Konak",
+        }, follow=True)
+        self.assertEqual(r.status_code, 200)
+        self.user.refresh_from_db()
+        self.assertEqual(self.user.first_name, "Ali")
+        self.assertEqual(self.user.email, "yeni@x.com")
+        self.assertEqual(self.user.profile.city, "İzmir")
+
+    def test_static_pages_load(self):
+        for name in ("about", "faq", "contact"):
+            self.assertEqual(self.client.get(reverse(name)).status_code, 200)

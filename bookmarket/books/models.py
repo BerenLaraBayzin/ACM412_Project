@@ -36,6 +36,7 @@ class Book(models.Model):
     condition = models.CharField(max_length=10, choices=CONDITION_CHOICES)
     image = models.ImageField(upload_to='book_images/')
     is_sold = models.BooleanField(default=False)
+    views_count = models.PositiveIntegerField(default=0)
     created_at = models.DateTimeField(auto_now_add=True)
     favorited_by = models.ManyToManyField(
         User, related_name='favorite_books', blank=True
@@ -73,6 +74,7 @@ class Message(models.Model):
     receiver = models.ForeignKey(User, on_delete=models.CASCADE, related_name='received_messages')
     book = models.ForeignKey(Book, on_delete=models.CASCADE, related_name='messages')
     body = models.TextField()
+    is_read = models.BooleanField(default=False)
     sent_at = models.DateTimeField(auto_now_add=True)
 
     def __str__(self):

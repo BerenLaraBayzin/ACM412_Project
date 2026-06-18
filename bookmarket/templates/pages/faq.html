@@ -1,0 +1,37 @@
+{% extends 'base.html' %}
+
+{% block title %}Sıkça Sorulan Sorular — BookMarket{% endblock %}
+
+{% block content %}
+<div class="page-doc">
+    <div class="form-header" style="text-align:left;">
+        <div class="eyebrow">Yardım</div>
+        <h1>Sıkça sorulan sorular</h1>
+    </div>
+
+    <details class="faq-item" open>
+        <summary>Nasıl kitap satarım?</summary>
+        <p>Üye olduktan sonra üst menüden “+ Kitap Sat”a tıkla. Başlık, yazar, fiyat, durum ve bir fotoğraf ekle. ISBN girersen başlık ve kapağı otomatik getirebiliriz.</p>
+    </details>
+    <details class="faq-item">
+        <summary>Ödeme güvenli mi?</summary>
+        <p>Ödeme ekranı kart bilgisini yalnızca biçim ve Luhn kontrolünden geçirir; kart numarası saklanmaz, yalnızca son 4 hane sipariş özetinde gösterilir. Kapıda ödeme seçeneği de mevcuttur. (Bu bir eğitim projesidir; gerçek tahsilat yapılmaz.)</p>
+    </details>
+    <details class="faq-item">
+        <summary>Kargomu nasıl takip ederim?</summary>
+        <p>Siparişin oluştuğunda otomatik bir kargo firması ve takip numarası atanır. Hesabım → Satın aldıklarım üzerinden siparişine girip durumu (Hazırlanıyor → Kargoya verildi → Dağıtımda → Teslim edildi) adım adım izleyebilirsin.</p>
+    </details>
+    <details class="faq-item">
+        <summary>Kargo ücreti ne kadar?</summary>
+        <p>150 ₺ ve üzeri siparişlerde kargo ücretsizdir. Altındaki siparişlerde sabit 39 ₺ kargo ücreti uygulanır.</p>
+    </details>
+    <details class="faq-item">
+        <summary>Siparişimi iptal edebilir miyim?</summary>
+        <p>Sipariş henüz “Hazırlanıyor” durumundayken hem alıcı hem satıcı iptal edebilir. Kargoya verildikten sonra iptal mümkün değildir.</p>
+    </details>
+    <details class="faq-item">
+        <summary>Satıcıyı nasıl değerlendiririm?</summary>
+        <p>Siparişin “Teslim edildi” olduğunda sipariş sayfasından satıcıya 1–5 yıldız ve yorum bırakabilirsin. Puanlar satıcı profilinde herkese görünür.</p>
+    </details>
+</div>
+{% endblock %}

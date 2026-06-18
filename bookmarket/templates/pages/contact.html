@@ -1,0 +1,31 @@
+{% extends 'base.html' %}
+
+{% block title %}İletişim — BookMarket{% endblock %}
+
+{% block content %}
+<div class="page-doc">
+    <div class="form-header" style="text-align:left;">
+        <div class="eyebrow">İletişim</div>
+        <h1>Bize ulaş</h1>
+    </div>
+    <p>Soruların, önerilerin veya bir sorun mu var? Aşağıdaki kanallardan bize yazabilirsin.</p>
+    <div class="contact-grid">
+        <div class="contact-card">
+            <div class="contact-ic">✉️</div>
+            <div class="contact-k">E-posta</div>
+            <div class="contact-v">destek@bookmarket.tr</div>
+        </div>
+        <div class="contact-card">
+            <div class="contact-ic">💬</div>
+            <div class="contact-k">Mesaj</div>
+            <div class="contact-v">Satıcılara ilan sayfasından doğrudan yazabilirsin.</div>
+        </div>
+        <div class="contact-card">
+            <div class="contact-ic">📍</div>
+            <div class="contact-k">Adres</div>
+            <div class="contact-v">ACM412 Dönem Projesi · Üniversite Kampüsü</div>
+        </div>
+    </div>
+    <p style="margin-top:2rem; color:var(--text-muted);">Yanıt süremiz genellikle 1 iş günüdür.</p>
+</div>
+{% endblock %}

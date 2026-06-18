@@ -7,8 +7,13 @@
     <div class="section-head">
         <div>
             <div style="font-size:0.78rem; font-weight:600; letter-spacing:0.12em; text-transform:uppercase; color:var(--text-muted); margin-bottom:0.5rem;">Profil</div>
-            <h2>{{ user.username }}</h2>
-            <div class="sub">{{ user.email|default:"E-posta yok" }} · Üye: {{ user.date_joined|date:"M Y" }}</div>
+            <h2>{{ user.get_full_name|default:user.username }}</h2>
+            <div class="sub">@{{ user.username }} · {{ user.email|default:"E-posta yok" }} · Üye: {{ user.date_joined|date:"M Y" }}</div>
+            <div style="margin-top:0.75rem; display:flex; gap:0.5rem; flex-wrap:wrap;">
+                <a class="btn btn-sm" href="{% url 'profile_edit' %}">Profili düzenle</a>
+                <a class="btn btn-sm" href="{% url 'password_change' %}">Şifre değiştir</a>
+                <a class="btn btn-sm" href="{% url 'seller_profile' user.username %}">Herkese açık profilim →</a>
+            </div>
         </div>
         <a class="btn btn-solid" href="{% url 'book_create' %}">+ Yeni Kitap Sat</a>
     </div>

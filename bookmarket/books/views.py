@@ -12,7 +12,7 @@ from django.contrib.auth import get_user_model
 from django.contrib.auth.decorators import login_required
 from django.core.paginator import Paginator
 from django.db import transaction
-from django.db.models import Avg, Count, Q
+from django.db.models import Avg, Count, F, Q
 from django.http import HttpResponseForbidden, JsonResponse
 from django.shortcuts import get_object_or_404, redirect, render
 from django.utils import timezone
@@ -234,13 +234,36 @@ def book_detail(request, pk):
         Book.objects.select_related('category', 'seller'),
         pk=pk,
     )
+    user = request.user
+    # Görüntülenme say (ilan sahibinin kendi ziyareti sayılmaz).
+    if not user.is_authenticated or user.id != book.seller_id:
+        Book.objects.filter(pk=book.pk).update(views_count=F('views_count') + 1)
+        book.views_count += 1
+
+    # Benzer kitaplar — aynı kategoriden, satışta, bu kitabı hariç.
+    related = []
+    if book.category_id:
+        related = list(
+            Book.objects.filter(
+                is_sold=False, category_id=book.category_id,
+            ).exclude(pk=book.pk)
+            .select_related('category', 'seller')
+            .order_by('-created_at')[:4]
+        )
+
     context = {
         'book': book,
         'favorite_count': book.favorited_by.count(),
         'seller_rating': seller_rating(book.seller),
+        'related_books': related,
+        'user_favorite_ids': set(),
     }
-    user = request.user
     if user.is_authenticated:
+        if related:
+            context['user_favorite_ids'] = set(
+                user.favorite_books.filter(pk__in=[b.pk for b in related])
+                .values_list('pk', flat=True)
+            )
         has_order = Order.objects.filter(book=book).exists()
         context['can_buy'] = (
             not book.is_sold
@@ -602,6 +625,30 @@ def order_advance(request, pk):
     return redirect('order_detail', pk=order.pk)
 
 
+@login_required
+@require_POST
+def order_cancel(request, pk):
+    """Sipariş iptali — yalnızca kargoya verilmeden önce (hazırlanıyor).
+
+    Alıcı veya satıcı iptal edebilir. İptalde kitap yeniden satışa açılır;
+    sipariş kaydı (ve kargo geçmişi) silinir.
+    """
+    order = get_object_or_404(Order.objects.select_related('book'), pk=pk)
+    if request.user.id not in (order.buyer_id, order.book.seller_id):
+        return HttpResponseForbidden('Bu siparişi iptal etme yetkiniz yok.')
+    if order.status != 'preparing':
+        messages.error(request, 'Kargoya verilmiş sipariş iptal edilemez.')
+        return redirect('order_detail', pk=order.pk)
+
+    book = order.book
+    with transaction.atomic():
+        order.delete()
+        book.is_sold = False
+        book.save(update_fields=['is_sold'])
+    messages.success(request, 'Sipariş iptal edildi, kitap yeniden satışta.')
+    return redirect('book_detail', pk=book.pk)
+
+
 def _thread_allowed(user, book, with_user):
     if user.id == with_user.id:
         return False
@@ -696,6 +743,11 @@ def message_thread(request, book_pk, user_pk):
     else:
         form = MessageForm()
 
+    # Karşı taraftan gelen okunmamış mesajları okundu işaretle.
+    Message.objects.filter(
+        book=book, sender=with_user, receiver=request.user, is_read=False,
+    ).update(is_read=True)
+
     thread_messages = (
         Message.objects.filter(book=book)
         .filter(
@@ -757,6 +809,18 @@ def seller_profile(request, username):
         'user_favorite_ids': user_favorite_ids,
     }
     return render(request, 'books/seller_profile.html', context)
+
+
+def about(request):
+    return render(request, 'pages/about.html')
+
+
+def faq(request):
+    return render(request, 'pages/faq.html')
+
+
+def contact(request):
+    return render(request, 'pages/contact.html')
 
 
 @login_required

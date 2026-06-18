@@ -35,7 +35,7 @@
                 <a class="nav-link {% if request.resolver_match.url_name == 'book_list' %}is-active{% endif %}" href="{% url 'book_list' %}">Keşfet</a>
                 {% if user.is_authenticated %}
                     <a class="nav-link {% if request.resolver_match.url_name == 'favorites_list' %}is-active{% endif %}" href="{% url 'favorites_list' %}">Favoriler</a>
-                    <a class="nav-link {% if request.resolver_match.url_name == 'message_list' %}is-active{% endif %}" href="{% url 'message_list' %}">Mesajlar</a>
+                    <a class="nav-link {% if request.resolver_match.url_name == 'message_list' %}is-active{% endif %}" href="{% url 'message_list' %}">Mesajlar{% if unread_messages %}<span class="nav-badge">{{ unread_messages }}</span>{% endif %}</a>
                     <a class="nav-link" href="{% url 'profile' %}">{{ user.username }}</a>
                     <form method="post" action="{% url 'logout' %}" style="margin:0;">
                         {% csrf_token %}
@@ -95,6 +95,12 @@
                     <a href="{% url 'login' %}">Giriş Yap</a>
                     <a href="{% url 'register' %}">Üye Ol</a>
                 {% endif %}
+            </div>
+            <div>
+                <h5>Kurumsal</h5>
+                <a href="{% url 'about' %}">Hakkında</a>
+                <a href="{% url 'faq' %}">SSS</a>
+                <a href="{% url 'contact' %}">İletişim</a>
             </div>
             <div>
                 <h5>API</h5>

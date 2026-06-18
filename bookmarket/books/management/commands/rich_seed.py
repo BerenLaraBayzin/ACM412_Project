@@ -762,6 +762,12 @@ class Command(BaseCommand):
                     fav_total += 1
         self.stdout.write(self.style.SUCCESS(f"{fav_total} favori ilişkisi eklendi."))
 
+        # Görüntülenme sayıları — gerçekçi dağılım (çoğu az, bir kısmı yüksek).
+        for book in created_books:
+            Book.objects.filter(pk=book.pk).update(
+                views_count=int(random.triangular(2, 400, 35)),
+            )
+
         # Mesajlaşma — doğal alıcı–satıcı diyalogları.
         active_books = [b for b in created_books if not b.is_sold]
         msg_threads = 0

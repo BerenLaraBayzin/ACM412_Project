@@ -1186,8 +1186,8 @@ footer.site-footer {
 }
 footer.site-footer .footer-grid {
   display: grid;
-  grid-template-columns: 1.5fr 1fr 1fr 1fr;
-  gap: 3rem;
+  grid-template-columns: 1.5fr 1fr 1fr 1fr 1fr;
+  gap: 2.5rem;
   margin-bottom: 3rem;
 }
 footer.site-footer h5 {
@@ -1657,4 +1657,76 @@ footer.site-footer .footer-bottom {
   .order-grid { grid-template-columns: 1fr; }
   .field-row { grid-template-columns: 1fr; }
   .track-step .label { font-size: 0.72rem; }
+}
+
+/* ─────────────────────────────────────────────
+   Bildirim rozeti, statik sayfalar, iptal (v4)
+   ───────────────────────────────────────────── */
+
+.nav-badge {
+  display: inline-block;
+  min-width: 18px;
+  padding: 0 5px;
+  margin-left: 5px;
+  font-size: 0.7rem;
+  font-weight: 700;
+  line-height: 18px;
+  text-align: center;
+  color: #fff;
+  background: var(--danger);
+  border-radius: 999px;
+  vertical-align: middle;
+}
+
+.btn-ghost-danger {
+  color: var(--danger);
+  border: 1px solid var(--line);
+  background: transparent;
+}
+.btn-ghost-danger:hover { border-color: var(--danger); background: rgba(176, 65, 65, 0.06); }
+.order-cancel { margin-top: 1rem; text-align: center; }
+
+/* Statik içerik sayfaları */
+.page-doc { max-width: 760px; margin: 1.5rem auto 0; }
+.page-doc h2 { font-family: var(--font-serif); font-size: 1.3rem; margin: 2rem 0 0.75rem; }
+.page-doc p { line-height: 1.7; color: var(--text); margin: 0 0 1rem; }
+.page-doc ul { line-height: 1.8; padding-left: 1.2rem; margin: 0 0 1rem; }
+.page-doc li { margin-bottom: 0.4rem; }
+
+.faq-item {
+  border: 1px solid var(--line);
+  border-radius: var(--r);
+  padding: 1rem 1.25rem;
+  margin-bottom: 0.75rem;
+  background: var(--bg-card);
+}
+.faq-item summary {
+  cursor: pointer;
+  font-weight: 600;
+  list-style: none;
+}
+.faq-item summary::-webkit-details-marker { display: none; }
+.faq-item summary::before { content: '＋ '; color: var(--accent); font-weight: 700; }
+.faq-item[open] summary::before { content: '− '; }
+.faq-item p { margin: 0.75rem 0 0; color: var(--text-muted); line-height: 1.65; }
+
+.contact-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 1rem;
+  margin-top: 1.5rem;
+}
+.contact-card {
+  background: var(--bg-card);
+  border: 1px solid var(--line);
+  border-radius: var(--r);
+  padding: 1.25rem;
+  text-align: center;
+}
+.contact-ic { font-size: 1.6rem; }
+.contact-k { font-weight: 600; margin-top: 0.5rem; }
+.contact-v { color: var(--text-muted); font-size: 0.9rem; margin-top: 0.25rem; }
+
+@media (max-width: 640px) {
+  .contact-grid { grid-template-columns: 1fr; }
 }

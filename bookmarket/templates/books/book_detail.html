@@ -71,6 +71,7 @@
             </div>
             <div class="spec"><span class="l">Durum</span><span class="v">{{ book.get_condition_display }}</span></div>
             <div class="spec"><span class="l">Eklenme</span><span class="v">{{ book.created_at|date:"d M Y" }}</span></div>
+            <div class="spec"><span class="l">Görüntülenme</span><span class="v">{{ book.views_count }}</span></div>
             {% if book.is_sold and sale %}
             <div class="spec"><span class="l">Alıcı</span><span class="v">{{ sale.buyer.username }}</span></div>
             {% endif %}
@@ -94,4 +95,21 @@
         </a>
     </div>
 </div>
+
+{% if related_books %}
+<section class="section">
+    <div class="section-head">
+        <div>
+            <h2>Benzer kitaplar</h2>
+            <div class="sub">{{ book.category.name }} kategorisinden</div>
+        </div>
+        <a class="more" href="{% url 'book_list' %}?category={{ book.category_id }}">Tümü →</a>
+    </div>
+    <div class="book-grid">
+        {% for b in related_books %}
+            {% include 'books/_book_card.html' with book=b %}
+        {% endfor %}
+    </div>
+</section>
+{% endif %}
 {% endblock %}

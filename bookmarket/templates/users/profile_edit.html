@@ -1,0 +1,60 @@
+{% extends 'base.html' %}
+
+{% block title %}Profili Düzenle — BookMarket{% endblock %}
+
+{% block content %}
+<div class="form-page">
+    <div class="form-header">
+        <div class="eyebrow">Hesap</div>
+        <h1>Profili düzenle</h1>
+        <p>Bilgilerin ödeme ekranında otomatik kullanılır.</p>
+    </div>
+
+    <div class="form-card">
+        <form method="post" novalidate>
+            {% csrf_token %}
+            {% if form.non_field_errors %}<div class="alert alert-danger">{{ form.non_field_errors }}</div>{% endif %}
+            <div class="field-row">
+                <div class="field">
+                    <label class="field-label" for="{{ form.first_name.id_for_label }}">{{ form.first_name.label }}</label>
+                    {{ form.first_name }}
+                    {% for e in form.first_name.errors %}<div class="field-error">{{ e }}</div>{% endfor %}
+                </div>
+                <div class="field">
+                    <label class="field-label" for="{{ form.last_name.id_for_label }}">{{ form.last_name.label }}</label>
+                    {{ form.last_name }}
+                    {% for e in form.last_name.errors %}<div class="field-error">{{ e }}</div>{% endfor %}
+                </div>
+            </div>
+            <div class="field">
+                <label class="field-label" for="{{ form.email.id_for_label }}">{{ form.email.label }}</label>
+                {{ form.email }}
+                {% for e in form.email.errors %}<div class="field-error">{{ e }}</div>{% endfor %}
+            </div>
+            <div class="field-row">
+                <div class="field">
+                    <label class="field-label" for="{{ form.phone.id_for_label }}">{{ form.phone.label }}</label>
+                    {{ form.phone }}
+                    {% for e in form.phone.errors %}<div class="field-error">{{ e }}</div>{% endfor %}
+                </div>
+                <div class="field">
+                    <label class="field-label" for="{{ form.city.id_for_label }}">{{ form.city.label }}</label>
+                    {{ form.city }}
+                    {% for e in form.city.errors %}<div class="field-error">{{ e }}</div>{% endfor %}
+                </div>
+            </div>
+            <div class="field">
+                <label class="field-label" for="{{ form.address.id_for_label }}">{{ form.address.label }}</label>
+                {{ form.address }}
+                {% for e in form.address.errors %}<div class="field-error">{{ e }}</div>{% endfor %}
+            </div>
+            <div class="form-actions">
+                <button type="submit" class="btn btn-solid">Kaydet</button>
+                <a href="{% url 'profile' %}" class="btn">Vazgeç</a>
+            </div>
+        </form>
+    </div>
+
+    <p class="form-aside"><a href="{% url 'password_change' %}">Şifreni değiştir →</a></p>
+</div>
+{% endblock %}

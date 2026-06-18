@@ -1,0 +1,23 @@
+{% extends 'base.html' %}
+
+{% block title %}Hakkında — BookMarket{% endblock %}
+
+{% block content %}
+<div class="page-doc">
+    <div class="form-header" style="text-align:left;">
+        <div class="eyebrow">Hakkında</div>
+        <h1>İkinci el kitaplara yeni bir hayat.</h1>
+    </div>
+    <p>BookMarket, okunmuş kitapları yeni okurlarla buluşturan bir ikinci el kitap pazarıdır. Amacımız; rafta bekleyen kitapları erişilebilir fiyatlarla dolaşıma sokmak, okumayı sürdürülebilir ve uygun maliyetli hâle getirmektir.</p>
+    <h2>Nasıl çalışır?</h2>
+    <ul>
+        <li><strong>Sat:</strong> Kitabının fotoğrafını ve bilgilerini ekle, dakikalar içinde ilanını yayınla. ISBN ile başlık ve kapağı otomatik doldurabilirsin.</li>
+        <li><strong>Keşfet:</strong> Kategori, fiyat ve duruma göre filtrele; satıcı puanlarına bak.</li>
+        <li><strong>Satın al:</strong> Güvenli ödeme ekranıyla siparişini ver, kargonu adım adım takip et.</li>
+        <li><strong>Değerlendir:</strong> Teslimat sonrası satıcıyı puanla, topluluğa katkı sağla.</li>
+    </ul>
+    <h2>Neden BookMarket?</h2>
+    <p>Depo yok, aracı yok — doğrudan satıcıdan alıcıya. Her işlem satıcı puanları ve kargo takibiyle şeffaf. Bu proje, ACM412 dönem projesi kapsamında Django ve Django REST Framework ile geliştirilmiştir.</p>
+    <p style="margin-top:2rem;"><a href="{% url 'book_list' %}" class="btn btn-solid">Kitapları keşfet</a></p>
+</div>
+{% endblock %}

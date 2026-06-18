@@ -2,8 +2,8 @@ from django.shortcuts import render, redirect
 from django.contrib import messages
 from django.contrib.auth.decorators import login_required
 
-from books.models import Order
-from .forms import UserRegisterForm
+from books.models import Order, Profile
+from .forms import ProfileEditForm, UserRegisterForm
 
 
 def register(request):
@@ -40,3 +40,24 @@ def profile(request):
         'users/profile.html',
         {'listings': listings, 'purchases': purchases, 'sales': sales},
     )
+
+
+@login_required
+def profile_edit(request):
+    profile = Profile.objects.filter(user=request.user).first()
+    if request.method == 'POST':
+        form = ProfileEditForm(request.POST, user=request.user)
+        if form.is_valid():
+            form.save()
+            messages.success(request, 'Profilin güncellendi.')
+            return redirect('profile')
+    else:
+        form = ProfileEditForm(user=request.user, initial={
+            'first_name': request.user.first_name,
+            'last_name': request.user.last_name,
+            'email': request.user.email,
+            'phone': profile.phone if profile else '',
+            'city': profile.city if profile else '',
+            'address': profile.address if profile else '',
+        })
+    return render(request, 'users/profile_edit.html', {'form': form})
